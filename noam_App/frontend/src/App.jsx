@@ -176,7 +176,8 @@ function TrainerDetail({trainer,db,onBack,onLogSession}){
     </div>
   </div>;
 }
-function ProgramBuilder({program:initProg,onSave,onCancel}){
+// ─── Program Builder ─────────────────────────────────────
+function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
   const isNew=!initProg;
   const blankProg={name:"",desc:"",level:"בינוני",sessionsPerWeek:3,days:[]};
   const [prog,setProg]=useState(isNew?blankProg:{...initProg,days:initProg.days?.map(d=>({...d,exercises:d.exercises?.map(e=>({...e}))}))||[]});
@@ -198,7 +199,8 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
   const dayExercises=prog.days[selDay]?.exercises||[];
   const updExercises=exs=>setProg(p=>({...p,days:p.days.map((d,i)=>i===selDay?{...d,exercises:exs}:d)}));
   
-  const addExercise=()=>updExercises([...dayExercises,{id:uid(),name:"",sets:3,reps:10,rest:60,note:""}]);
+  // הוספת שדה המשקל הריק כברירת מחדל
+  const addExercise=()=>updExercises([...dayExercises,{id:uid(),name:"",sets:3,reps:10,rest:60,weight:"",note:""}]);
   const removeExercise=id=>updExercises(dayExercises.filter(e=>e.id!==id));
   const updExercise=(id,patch)=>updExercises(dayExercises.map(e=>e.id===id?{...e,...patch}:e));
   const moveEx=(idx,dir)=>{
@@ -209,13 +211,18 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
     updExercises(exs);
   };
 
-  // ─── בדיקות תקינות (ולידציה) ───
+  // ─── בדיקות תקינות (ולידציה כולל שם כפול) ───
   const daysHaveExercises = prog.days.length > 0 && prog.days.every(d => d.exercises && d.exercises.length > 0);
   const daysMatchConfig = prog.days.length === Number(prog.sessionsPerWeek);
-  const valid = prog.name.trim() && daysHaveExercises && daysMatchConfig;
+  
+  // בדיקה האם קיימת תוכנית אחרת עם אותו שם
+  const isDuplicateName = programs.some(p => p.name.trim() === prog.name.trim() && p.id !== prog.id);
+  
+  const valid = prog.name.trim() && daysHaveExercises && daysMatchConfig && !isDuplicateName;
 
   let errorMsg = "";
   if (!prog.name.trim()) errorMsg = "יש להזין שם לתוכנית";
+  else if (isDuplicateName) errorMsg = "קיימת כבר תוכנית אימון עם השם הזה";
   else if (prog.days.length !== Number(prog.sessionsPerWeek)) errorMsg = `יש להגדיר בדיוק ${prog.sessionsPerWeek} ימי אימון (בנית ${prog.days.length} עד כה)`;
   else if (!daysHaveExercises) errorMsg = "לכל יום חייב להיות לפחות תרגיל 1";
 
@@ -225,21 +232,18 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
       <div style={{fontSize:22,fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תוכנית אימון חדשה":"✏️ עריכת תוכנית"}</div>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
-        {/* הצגת שגיאת הולידציה במידה ויש */}
         {errorMsg && <div style={{background:"#ffebee",color:"#d32f2f",padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600}}>{errorMsg}</div>}
-        
         <Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0",color:"#555"}}>ביטול</Btn>
         <Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור תוכנית</Btn>
       </div>
     </div>
 
-    {/* פרטי התוכנית */}
     <div style={{background:"#fff",borderRadius:16,padding:"24px",marginBottom:24,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
       <div style={{fontSize:16,fontWeight:600,color:"#1a1a2e",marginBottom:16}}>הגדרות בסיסיות</div>
       <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr",gap:16}}>
         <div>
           <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>שם התוכנית</label>
-          <input style={inputStyle} value={prog.name} onChange={e=>upd({name:e.target.value})} placeholder="לדוגמה: פול בודי חיזוק" onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+          <input style={{...inputStyle, borderColor: isDuplicateName ? "#d32f2f" : "#e0e0e0"}} value={prog.name} onChange={e=>upd({name:e.target.value})} placeholder="לדוגמה: פול בודי חיזוק" onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor=isDuplicateName ? "#d32f2f" : "#e0e0e0"}/>
         </div>
         <div>
           <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>תיאור</label>
@@ -259,7 +263,6 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
     </div>
 
     <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:24,alignItems:"start"}}>
-      {/* סרגל ימים */}
       <div style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div style={{fontSize:14,fontWeight:600,color:"#555"}}>ימי האימון</div>
@@ -274,7 +277,6 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
         <Btn full onClick={addDay} disabled={prog.days.length>=7} style={{background:"#f0f4ff", color:"#1565C0", border:"2px dashed #90CAF9", marginTop:8}}>+ הוסף יום אימון</Btn>
       </div>
 
-      {/* עורך תרגילים */}
       {prog.days[selDay]?<div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24, paddingBottom:16, borderBottom:"1px solid #f0f0f0"}}>
           <div>
@@ -306,8 +308,15 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
             
             <button onClick={()=>removeExercise(ex.id)} style={{background:"#ffebee",border:"none",borderRadius:8,cursor:"pointer",color:"#d32f2f",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,transition:"background 0.2s"}}>🗑</button>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 2fr",gap:16,paddingRight:40}}>
-            {[{label:"סטים",key:"sets",type:"number",min:1,holder:"3"},{label:"חזרות (לסט)",key:"reps",type:"number",min:1,holder:"10"},{label:"מנוחה (שניות)",key:"rest",type:"number",min:0,holder:"60"}].map(f=><div key={f.key}>
+          
+          {/* הוספת עמודת המשקל */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 2fr",gap:16,paddingRight:40}}>
+            {[
+              {label:"סטים",key:"sets",type:"number",min:1,holder:"3"},
+              {label:"חזרות (לסט)",key:"reps",type:"number",min:1,holder:"10"},
+              {label:"מנוחה (שנ')",key:"rest",type:"number",min:0,holder:"60"},
+              {label:"משקל (ק״ג)",key:"weight",type:"number",min:0,holder:"אופציונלי"}
+            ].map(f=><div key={f.key}>
               <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6,fontWeight:500}}>{f.label}</label>
               <input type={f.type} min={f.min} value={ex[f.key]||""} onChange={e=>updExercise(ex.id,{[f.key]:e.target.value===""?null:Number(e.target.value)})} placeholder={f.holder}
                 style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box", transition:"border-color 0.2s"}}
@@ -327,10 +336,10 @@ function ProgramBuilder({program:initProg,onSave,onCancel}){
     </div>
   </div>;
 }
-
-// ─── Programs Page (החלף את הרכיב הקיים בזה) ───────────────────────────────────────────
-function ProgramsPage({db,onAdd,onEdit,onDelete}){
-  const {programs}=db;
+// ─── Programs Page ───────────────────────────────────────────
+function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign}){
+  const {programs, trainers}=db;
+  const [assignModalProg, setAssignModalProg] = useState(null); // מזהה את התוכנית הפתוחה לשיוך
   
   return <div style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -369,8 +378,10 @@ function ProgramsPage({db,onAdd,onEdit,onDelete}){
             </div>
           </div>
           
-          {/* כפתור מחיקה שלא יפעיל את העריכה כשלוחצים עליו */}
           <div style={{display:"flex",alignItems:"center",gap:16}}>
+            {/* כפתור השיוך החדש */}
+            <Btn sm onClick={(e)=>{e.stopPropagation(); setAssignModalProg(p);}} style={{background:"#e3f2fd",color:"#1565C0"}}>🔗 שיוך למתאמנים</Btn>
+            
             <button onClick={(e)=>{e.stopPropagation(); onDelete(p.id);}} style={{background:"#fff0f0",color:"#d32f2f",border:"none",borderRadius:8,width:40,height:40,fontSize:18,cursor:"pointer",transition:"background 0.2s"}}
               onMouseEnter={e=>e.currentTarget.style.background="#ffebee"} onMouseLeave={e=>e.currentTarget.style.background="#fff0f0"}>
               🗑
@@ -385,6 +396,30 @@ function ProgramsPage({db,onAdd,onEdit,onDelete}){
         <div style={{fontSize:16}}>אין תוכניות אימון במערכת</div>
       </div>}
     </div>
+
+    {/* חלון קופץ לשיוך מתאמנים */}
+    <Modal open={!!assignModalProg} onClose={()=>setAssignModalProg(null)} title={`שיוך תוכנית: ${assignModalProg?.name}`}>
+      <div style={{display:"flex",flexDirection:"column",gap:10, maxHeight:"300px", overflowY:"auto", paddingRight:4}}>
+        {trainers.map(t=>(
+          <label key={t.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:"#f8f9fa",borderRadius:12,cursor:"pointer",border:"1px solid #e0e0e0"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <Avatar trainer={t} size={32}/>
+              <span style={{fontSize:15,fontWeight:500,color:"#1a1a2e"}}>{t.fname} {t.lname}</span>
+            </div>
+            <input 
+              type="checkbox" 
+              checked={t.programId === assignModalProg?.id} 
+              onChange={e => onAssign(t.id, e.target.checked ? assignModalProg.id : null)}
+              style={{width:20,height:20,cursor:"pointer",accentColor:"#2196F3"}}
+            />
+          </label>
+        ))}
+        {!trainers.length && <div style={{textAlign:"center",color:"#888",padding:"20px"}}>אין מתאמנים במערכת</div>}
+      </div>
+      <div style={{marginTop:20}}>
+        <Btn primary full onClick={()=>setAssignModalProg(null)}>סיום ושמירה</Btn>
+      </div>
+    </Modal>
   </div>;
 }
 // ─── Modals ───────────────────────────────────────────────────────────────────
@@ -395,7 +430,6 @@ function TrainerModal({open,onClose,onSave,initial,programs}){
   return <Modal open={open} onClose={onClose} title="מתאמן"><Btn onClick={onClose}>סגור</Btn></Modal>;
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App(){
   const [db,setDb]=useState(null);
   const [page,setPage]=useState("dashboard");
@@ -434,20 +468,22 @@ export default function App(){
 
   if(loading) return <div>טוען...</div>;
 
+  // פונקציות למתאמנים שהיו חסרות
+  const addTrainer=form=>updateDb(prev=>({...prev,trainers:[...prev.trainers,{...form,id:prev.nextTrainerId,avatar:""}],nextTrainerId:prev.nextTrainerId+1}));
+  const editTrainer=form=>updateDb(prev=>({...prev,trainers:prev.trainers.map(t=>t.id===form.id?{...t,...form}:t)}));
+  const deleteTrainer=id=>updateDb(prev=>({...prev,trainers:prev.trainers.filter(t=>t.id!==id),sessions:prev.sessions.filter(s=>s.trainerId!==id)}));
+  const logSession=session=>updateDb(prev=>({...prev,sessions:[...prev.sessions,{...session,id:prev.nextSessionId}],nextSessionId:prev.nextSessionId+1}));
+
   const saveProgram = async (prog) => {
     setSaving(true);
     let finalProg = prog;
 
     try {
-      // בדיקה אם התוכנית כבר קיימת בבסיס הנתונים (יש לה ID של MongoDB - מחרוזת)
       const isExisting = prog.id && typeof prog.id === 'string';
 
       if (isExisting) {
-        // כאן ניתן להוסיף קריאת PUT לשרת אם תרצה לעדכן גם ב-Backend
-        // לעת עתה נעדכן את ה-State המקומי
         finalProg = prog;
       } else {
-        // יצירת תוכנית חדשה בשרת
         const res = await fetch(`${API_URL}/programs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -455,7 +491,6 @@ export default function App(){
         });
         if (res.ok) {
           const apiData = await res.json();
-          // ה-ID החדש מה-DB
           finalProg = { ...prog, id: apiData._id || apiData.id }; 
         }
       }
@@ -463,17 +498,12 @@ export default function App(){
       console.warn("API save failed. Saving locally.");
     }
 
-    // עדכון ה-State של האפליקציה
     updateDb(prev => {
-      // בדיקה אם התוכנית כבר קיימת במערך הקיים
       const index = prev.programs.findIndex(p => p.id === finalProg.id);
-      
       let newPrograms = [...prev.programs];
       if (index !== -1) {
-        // עדכון תוכנית קיימת
         newPrograms[index] = finalProg;
       } else {
-        // הוספת תוכנית חדשה
         newPrograms.push({ ...finalProg, id: finalProg.id || prev.nextProgramId });
       }
       
@@ -487,6 +517,28 @@ export default function App(){
     setProgramBuilderTarget(null);
     setSaving(false);
   };
+
+  const deleteProgram = async id => {
+    if(!window.confirm("האם אתה בטוח שברצונך למחוק תוכנית זו לצמיתות? היא תוסר גם מכל המתאמנים המשויכים אליה.")) return;
+    
+    try {
+      await fetch(`${API_URL}/programs/${id}`, { method: "DELETE" });
+    } catch(e) {
+      console.warn("API delete failed, deleting locally instead", e);
+    }
+
+    updateDb(prev => ({
+      ...prev,
+      programs: prev.programs.filter(p => p.id !== id),
+      trainers: prev.trainers.map(t => t.programId === id ? { ...t, programId: null } : t)
+    }));
+  };
+
+  const assignProgram = (tid, pid) => updateDb(prev => ({
+    ...prev,
+    trainers: prev.trainers.map(t => t.id === tid ? { ...t, programId: pid } : t)
+  }));
+
   const navTo=p=>{ setPage(p); setSelectedTrainer(null); setProgramBuilderTarget(null); };
   const showBuilder=programBuilderTarget!==null;
 
@@ -495,13 +547,26 @@ export default function App(){
     {saving&&<div style={{position:"fixed",bottom:20,left:20,background:"#1565C0",color:"#fff",padding:10}}>שומר...</div>}
 
     {showBuilder
-      ? <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
+      // תוקן: הוספת programs={db.programs} כדי שהולידציה של שם כפול לא תקרוס
+      ? <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
       : <>
           {page==="dashboard"&&!selectedTrainer&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")}/>}
-          {page==="trainers"&&!selectedTrainer&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onSelect={t=>setSelectedTrainer(t)}/>}
-          {page==="trainers"&&selectedTrainer&&<TrainerDetail trainer={selectedTrainer} db={db} onBack={()=>setSelectedTrainer(null)}/>}
-          {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} />}
+          
+          {/* תוקן: הוספת onDelete ו-onEdit למסך המתאמנים */}
+          {page==="trainers"&&!selectedTrainer&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}} onSelect={t=>setSelectedTrainer(t)}/>}
+          
+          {/* תוקן: הוספת אפשרות רישום אימון מהפרופיל האישי */}
+          {page==="trainers"&&selectedTrainer&&<TrainerDetail trainer={selectedTrainer} db={db} onBack={()=>setSelectedTrainer(null)} onLogSession={t=>{setLogTarget(t);setModal("log-session");}}/>}
+          
+          {/* תוקן: הוספת onDelete למסך התוכניות */}
+          {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} onDelete={deleteProgram} onAssign={assignProgram} />}
         </>
     }
+
+    {/* תוקן: החזרת המודאלים (חלונות קופצים) כדי שיהיה אפשר באמת להוסיף מתאמנים */}
+    <TrainerModal open={modal==="add-trainer"} onClose={()=>setModal(null)} onSave={addTrainer} programs={db.programs}/>
+    <TrainerModal open={modal==="edit-trainer"} onClose={()=>{setModal(null);setEditTarget(null);}} onSave={editTrainer} initial={editTarget} programs={db.programs}/>
+    <LogSessionModal open={modal==="log-session"} onClose={()=>{setModal(null);setLogTarget(null);}} db={db} defaultTrainer={logTarget} onSave={logSession}/>
+
   </div>;
 }
