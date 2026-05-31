@@ -434,11 +434,20 @@ export default function App(){
 
   if(loading) return <div>טוען...</div>;
 
-  const saveProgram=async prog=>{
+  const saveProgram = async (prog) => {
     setSaving(true);
     let finalProg = prog;
+
     try {
-      if (!prog.id || (typeof prog.id === 'number')) {
+      // בדיקה אם התוכנית כבר קיימת בבסיס הנתונים (יש לה ID של MongoDB - מחרוזת)
+      const isExisting = prog.id && typeof prog.id === 'string';
+
+      if (isExisting) {
+        // כאן ניתן להוסיף קריאת PUT לשרת אם תרצה לעדכן גם ב-Backend
+        // לעת עתה נעדכן את ה-State המקומי
+        finalProg = prog;
+      } else {
+        // יצירת תוכנית חדשה בשרת
         const res = await fetch(`${API_URL}/programs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -446,22 +455,38 @@ export default function App(){
         });
         if (res.ok) {
           const apiData = await res.json();
+          // ה-ID החדש מה-DB
           finalProg = { ...prog, id: apiData._id || apiData.id }; 
         }
-      } 
-    } catch(e) {}
+      }
+    } catch(e) {
+      console.warn("API save failed. Saving locally.");
+    }
 
-    updateDb(prev=>{
-      const isUpdate = prev.programs.some(p => p.id === finalProg.id);
-      const newPrograms = isUpdate 
-        ? prev.programs.map(p => p.id === finalProg.id ? finalProg : p)
-        : [...prev.programs, { ...finalProg, id: finalProg.id || prev.nextProgramId }];
-      return { ...prev, programs: newPrograms };
+    // עדכון ה-State של האפליקציה
+    updateDb(prev => {
+      // בדיקה אם התוכנית כבר קיימת במערך הקיים
+      const index = prev.programs.findIndex(p => p.id === finalProg.id);
+      
+      let newPrograms = [...prev.programs];
+      if (index !== -1) {
+        // עדכון תוכנית קיימת
+        newPrograms[index] = finalProg;
+      } else {
+        // הוספת תוכנית חדשה
+        newPrograms.push({ ...finalProg, id: finalProg.id || prev.nextProgramId });
+      }
+      
+      return { 
+        ...prev, 
+        programs: newPrograms,
+        nextProgramId: index !== -1 ? prev.nextProgramId : prev.nextProgramId + 1 
+      };
     });
+    
     setProgramBuilderTarget(null);
     setSaving(false);
   };
-
   const navTo=p=>{ setPage(p); setSelectedTrainer(null); setProgramBuilderTarget(null); };
   const showBuilder=programBuilderTarget!==null;
 
