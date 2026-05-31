@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://amitmalca10_db_user:Am20012002@cluster0.yr6rbg3.mongodb.net/")
 client = AsyncIOMotorClient(MONGO_URL)
 db = client.noamtrains
 programs_collection = db.get_collection("programs")

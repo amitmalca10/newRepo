@@ -176,75 +176,217 @@ function TrainerDetail({trainer,db,onBack,onLogSession}){
     </div>
   </div>;
 }
-
-// ─── Program Builder ─────────────────────────────────────
 function ProgramBuilder({program:initProg,onSave,onCancel}){
   const isNew=!initProg;
   const blankProg={name:"",desc:"",level:"בינוני",sessionsPerWeek:3,days:[]};
-  const [prog,setProg]=useState(isNew?blankProg:{...initProg});
+  const [prog,setProg]=useState(isNew?blankProg:{...initProg,days:initProg.days?.map(d=>({...d,exercises:d.exercises?.map(e=>({...e}))}))||[]});
   const [selDay,setSelDay]=useState(0);
+
   const upd=patch=>setProg(p=>({...p,...patch}));
 
   const addDay=()=>{
     const n={id:uid(),name:`יום ${prog.days.length+1}`,exercises:[]};
     setProg(p=>({...p,days:[...p.days,n]}));
+    setSelDay(prog.days.length);
   };
+  const removeDay=idx=>{
+    setProg(p=>({...p,days:p.days.filter((_,i)=>i!==idx)}));
+    setSelDay(s=>Math.max(0,s-(s>=idx?1:0)));
+  };
+  const renameDay=(idx,name)=>setProg(p=>({...p,days:p.days.map((d,i)=>i===idx?{...d,name}:d)}));
 
   const dayExercises=prog.days[selDay]?.exercises||[];
-  const addExercise=()=>{
-    const exs=[...dayExercises,{id:uid(),name:"",sets:3,reps:10}];
-    setProg(p=>({...p,days:p.days.map((d,i)=>i===selDay?{...d,exercises:exs}:d)}));
+  const updExercises=exs=>setProg(p=>({...p,days:p.days.map((d,i)=>i===selDay?{...d,exercises:exs}:d)}));
+  
+  const addExercise=()=>updExercises([...dayExercises,{id:uid(),name:"",sets:3,reps:10,rest:60,note:""}]);
+  const removeExercise=id=>updExercises(dayExercises.filter(e=>e.id!==id));
+  const updExercise=(id,patch)=>updExercises(dayExercises.map(e=>e.id===id?{...e,...patch}:e));
+  const moveEx=(idx,dir)=>{
+    const exs=[...dayExercises];
+    const to=idx+dir;
+    if(to<0||to>=exs.length) return;
+    [exs[idx],exs[to]]=[exs[to],exs[idx]];
+    updExercises(exs);
   };
 
-  const valid=prog.name.trim()&&prog.days.length>0;
+  // ─── בדיקות תקינות (ולידציה) ───
+  const daysHaveExercises = prog.days.length > 0 && prog.days.every(d => d.exercises && d.exercises.length > 0);
+  const daysMatchConfig = prog.days.length === Number(prog.sessionsPerWeek);
+  const valid = prog.name.trim() && daysHaveExercises && daysMatchConfig;
+
+  let errorMsg = "";
+  if (!prog.name.trim()) errorMsg = "יש להזין שם לתוכנית";
+  else if (prog.days.length !== Number(prog.sessionsPerWeek)) errorMsg = `יש להגדיר בדיוק ${prog.sessionsPerWeek} ימי אימון (בנית ${prog.days.length} עד כה)`;
+  else if (!daysHaveExercises) errorMsg = "לכל יום חייב להיות לפחות תרגיל 1";
+
+  const inputStyle={width:"100%",padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.2s"};
 
   return <div style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-      <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{isNew?"תוכנית חדשה":"עריכת תוכנית"}</div>
-      <div style={{display:"flex",gap:8}}>
-        <Btn onClick={onCancel}>ביטול</Btn>
+      <div style={{fontSize:22,fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תוכנית אימון חדשה":"✏️ עריכת תוכנית"}</div>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        {/* הצגת שגיאת הולידציה במידה ויש */}
+        {errorMsg && <div style={{background:"#ffebee",color:"#d32f2f",padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600}}>{errorMsg}</div>}
+        
+        <Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0",color:"#555"}}>ביטול</Btn>
         <Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור תוכנית</Btn>
       </div>
     </div>
 
-    <div style={{background:"#fff",borderRadius:16,padding:"20px 24px",marginBottom:20}}>
-      <input style={{width:"100%",padding:"10px",border:"1.5px solid #e0e0e0",borderRadius:7}} value={prog.name} onChange={e=>upd({name:e.target.value})} placeholder="שם התוכנית"/>
+    {/* פרטי התוכנית */}
+    <div style={{background:"#fff",borderRadius:16,padding:"24px",marginBottom:24,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+      <div style={{fontSize:16,fontWeight:600,color:"#1a1a2e",marginBottom:16}}>הגדרות בסיסיות</div>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr",gap:16}}>
+        <div>
+          <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>שם התוכנית</label>
+          <input style={inputStyle} value={prog.name} onChange={e=>upd({name:e.target.value})} placeholder="לדוגמה: פול בודי חיזוק" onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+        </div>
+        <div>
+          <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>תיאור</label>
+          <input style={inputStyle} value={prog.desc} onChange={e=>upd({desc:e.target.value})} placeholder="תיאור קצר (אופציונלי)" onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+        </div>
+        <div>
+          <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>רמת קושי</label>
+          <select style={{...inputStyle, background:"#fff", cursor:"pointer"}} value={prog.level} onChange={e=>upd({level:e.target.value})} onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}>
+            {["מתחיל","בינוני","מתקדם"].map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>אימונים בשבוע</label>
+          <input style={inputStyle} type="number" min={1} max={7} value={prog.sessionsPerWeek} onChange={e=>upd({sessionsPerWeek:Number(e.target.value)})} onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+        </div>
+      </div>
     </div>
 
-    <div style={{display:"flex",gap:20,alignItems:"start"}}>
-      <div style={{width:200,background:"#fff",borderRadius:16,padding:"16px"}}>
-        {prog.days.map((d,i)=><div key={d.id} onClick={()=>setSelDay(i)} style={{padding:"8px",background:selDay===i?"#E3F2FD":"#f9f9f9",cursor:"pointer",marginBottom:8}}>{d.name}</div>)}
-        <button onClick={addDay}>+ הוסף יום</button>
+    <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:24,alignItems:"start"}}>
+      {/* סרגל ימים */}
+      <div style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:600,color:"#555"}}>ימי האימון</div>
+          <div style={{fontSize:12,color:prog.days.length===Number(prog.sessionsPerWeek)?"#4CAF50":"#d32f2f",fontWeight:600}}>{prog.days.length} / {prog.sessionsPerWeek}</div>
+        </div>
+        {prog.days.map((d,i)=><div key={d.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <div onClick={()=>setSelDay(i)} style={{flex:1,padding:"10px 14px",borderRadius:10,cursor:"pointer",background:selDay===i?"#E3F2FD":"#f8f9fa",border:selDay===i?"2px solid #2196F3":"2px solid transparent",fontSize:14,fontWeight:selDay===i?600:500,color:selDay===i?"#1565C0":"#444",transition:"all 0.2s"}}>
+            {d.name||`יום ${i+1}`}
+          </div>
+          <button onClick={()=>removeDay(i)} style={{background:"#ffebee",border:"none",borderRadius:8,cursor:"pointer",color:"#d32f2f",width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,transition:"background 0.2s"}}>✕</button>
+        </div>)}
+        <Btn full onClick={addDay} disabled={prog.days.length>=7} style={{background:"#f0f4ff", color:"#1565C0", border:"2px dashed #90CAF9", marginTop:8}}>+ הוסף יום אימון</Btn>
       </div>
 
-      {prog.days[selDay]&&<div style={{flex:1,background:"#fff",borderRadius:16,padding:"20px 24px"}}>
-        <Btn sm primary onClick={addExercise}>+ הוסף תרגיל</Btn>
-        {dayExercises.map((ex,i)=><div key={ex.id} style={{padding:"10px",background:"#F8FBFF",marginBottom:10,marginTop:10}}>
-          <input value={ex.name} onChange={e=>{
-            const val=e.target.value;
-            setProg(p=>({...p,days:p.days.map((d,di)=>di===selDay?{...d,exercises:d.exercises.map((eObj,ei)=>ei===i?{...eObj,name:val}:eObj)}:d)}));
-          }} placeholder="שם התרגיל"/>
+      {/* עורך תרגילים */}
+      {prog.days[selDay]?<div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24, paddingBottom:16, borderBottom:"1px solid #f0f0f0"}}>
+          <div>
+            <input value={prog.days[selDay].name} onChange={e=>renameDay(selDay,e.target.value)}
+              style={{fontSize:20,fontWeight:700,color:"#1a1a2e",border:"none",outline:"none",background:"transparent",fontFamily:"inherit",direction:"rtl", borderBottom:"2px solid transparent", paddingBottom:4, transition:"border-color 0.2s"}}
+              onFocus={e=>e.target.style.borderBottomColor="#2196F3"} onBlur={e=>e.target.style.borderBottomColor="transparent"} placeholder="שם היום (למשל: כוח עליון)"/>
+            <div style={{fontSize:13,color:"#888",marginTop:4}}>{dayExercises.length} תרגילים ביום זה</div>
+          </div>
+          <Btn primary onClick={addExercise}>+ הוסף תרגיל</Btn>
+        </div>
+
+        {dayExercises.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:"#bbb", background:"#f8f9fa", borderRadius:12}}>
+          <div style={{fontSize:40,marginBottom:12}}>🏋️</div>
+          <div style={{fontSize:15, fontWeight:500, color:"#d32f2f"}}>חובה להוסיף לפחות תרגיל אחד ליום זה</div>
+          <div style={{fontSize:13, marginTop:4}}>לחץ על "הוסף תרגיל" כדי להתחיל לבנות את האימון</div>
+        </div>}
+
+        {dayExercises.map((ex,i)=><div key={ex.id} style={{background:"#ffffff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #e0e0e0", boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+              <button onClick={()=>moveEx(i,-1)} disabled={i===0} style={{background:"none",border:"none",cursor:i===0?"default":"pointer",color:i===0?"#ddd":"#888",fontSize:14}}>▲</button>
+              <button onClick={()=>moveEx(i,1)} disabled={i===dayExercises.length-1} style={{background:"none",border:"none",cursor:i===dayExercises.length-1?"default":"pointer",color:i===dayExercises.length-1?"#ddd":"#888",fontSize:14}}>▼</button>
+            </div>
+            <div style={{background:"#e3f2fd",color:"#1565c0",borderRadius:8,width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{i+1}</div>
+            
+            <input value={ex.name} onChange={e=>updExercise(ex.id,{name:e.target.value})} placeholder="שם התרגיל (למשל: סקוואט)"
+              style={{flex:1,padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:15,direction:"rtl",outline:"none",fontFamily:"inherit",fontWeight:600, transition:"border-color 0.2s"}}
+              onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+            
+            <button onClick={()=>removeExercise(ex.id)} style={{background:"#ffebee",border:"none",borderRadius:8,cursor:"pointer",color:"#d32f2f",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,transition:"background 0.2s"}}>🗑</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 2fr",gap:16,paddingRight:40}}>
+            {[{label:"סטים",key:"sets",type:"number",min:1,holder:"3"},{label:"חזרות (לסט)",key:"reps",type:"number",min:1,holder:"10"},{label:"מנוחה (שניות)",key:"rest",type:"number",min:0,holder:"60"}].map(f=><div key={f.key}>
+              <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6,fontWeight:500}}>{f.label}</label>
+              <input type={f.type} min={f.min} value={ex[f.key]||""} onChange={e=>updExercise(ex.id,{[f.key]:e.target.value===""?null:Number(e.target.value)})} placeholder={f.holder}
+                style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box", transition:"border-color 0.2s"}}
+                onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+            </div>)}
+            <div>
+              <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6,fontWeight:500}}>הערות / דגשים</label>
+              <input value={ex.note||""} onChange={e=>updExercise(ex.id,{note:e.target.value})} placeholder="למשל: לשמור על גב ישר"
+                style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box", transition:"border-color 0.2s"}}
+                onFocus={e=>e.target.style.borderColor="#2196F3"} onBlur={e=>e.target.style.borderColor="#e0e0e0"}/>
+            </div>
+          </div>
         </div>)}
+      </div>:<div style={{background:"#fff",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",minHeight:400,color:"#bbb",flexDirection:"column",gap:16,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+        <div style={{fontSize:48}}>📋</div><div style={{fontSize:16, fontWeight:500}}>בחר יום מהרשימה או הוסף יום חדש</div>
       </div>}
     </div>
   </div>;
 }
 
-// ─── Programs Page ───────────────────────────────────────────
-function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign}){
+// ─── Programs Page (החלף את הרכיב הקיים בזה) ───────────────────────────────────────────
+function ProgramsPage({db,onAdd,onEdit,onDelete}){
   const {programs}=db;
+  
   return <div style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-      <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>תוכניות אימון</div>
+      <div style={{fontSize:24,fontWeight:700,color:"#1a1a2e"}}>תוכניות אימון</div>
       <Btn primary onClick={onAdd}>+ תוכנית חדשה</Btn>
     </div>
-    {programs.map(p=><div key={p.id} style={{background:"#fff",padding:16,marginBottom:10,borderRadius:10}}>
-      <div style={{fontWeight:"bold"}}>{p.name}</div>
-      <Btn sm onClick={()=>onEdit(p)}>עריכה</Btn>
-    </div>)}
+    
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      {programs.map(p=>(
+        <div key={p.id} onClick={()=>onEdit(p)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,padding:"20px 24px",cursor:"pointer",boxShadow:"0 2px 10px rgba(33,150,243,.06)",borderRight:"6px solid #2196F3",transition:"transform 0.2s, box-shadow 0.2s"}}
+          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(33,150,243,.12)"}}
+          onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 10px rgba(33,150,243,.06)"}}>
+          
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+              <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>{p.name}</div>
+              <span style={{background:"#e3f2fd",color:"#1565C0",padding:"2px 10px",borderRadius:12,fontSize:12,fontWeight:600}}>{p.level}</span>
+            </div>
+            <div style={{fontSize:14,color:"#666"}}>{p.desc||"ללא תיאור לתוכנית זו"}</div>
+          </div>
+          
+          <div style={{display:"flex",alignItems:"center",gap:40,marginLeft:24}}>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:700,color:"#1565C0"}}>{p.sessionsPerWeek}</div>
+              <div style={{fontSize:12,color:"#888"}}>אימונים בשבוע</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:700,color:"#1565C0"}}>{p.days?.length||0}</div>
+              <div style={{fontSize:12,color:"#888"}}>ימים מוגדרים</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:700,color:"#1565C0"}}>
+                {p.days?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0}
+              </div>
+              <div style={{fontSize:12,color:"#888"}}>סה"כ תרגילים</div>
+            </div>
+          </div>
+          
+          {/* כפתור מחיקה שלא יפעיל את העריכה כשלוחצים עליו */}
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <button onClick={(e)=>{e.stopPropagation(); onDelete(p.id);}} style={{background:"#fff0f0",color:"#d32f2f",border:"none",borderRadius:8,width:40,height:40,fontSize:18,cursor:"pointer",transition:"background 0.2s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#ffebee"} onMouseLeave={e=>e.currentTarget.style.background="#fff0f0"}>
+              🗑
+            </button>
+            <div style={{color:"#ccc",fontSize:24,fontWeight:"bold", transform:"rotate(180deg)"}}>❯</div>
+          </div>
+        </div>
+      ))}
+      
+      {!programs.length&&<div style={{textAlign:"center",padding:"60px 0",color:"#bbb",background:"#fff",borderRadius:16,boxShadow:"0 2px 10px rgba(33,150,243,.06)"}}>
+        <div style={{fontSize:48,marginBottom:12}}>📋</div>
+        <div style={{fontSize:16}}>אין תוכניות אימון במערכת</div>
+      </div>}
+    </div>
   </div>;
 }
-
 // ─── Modals ───────────────────────────────────────────────────────────────────
 function LogSessionModal({open,onClose,db,defaultTrainer,onSave}){
   return <Modal open={open} onClose={onClose} title="רישום אימון"><Btn onClick={onClose}>סגור</Btn></Modal>;
