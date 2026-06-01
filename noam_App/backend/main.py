@@ -69,3 +69,11 @@ async def create_program(program: Program):
     new_program = await programs_collection.insert_one(program.dict(by_alias=True, exclude={"id"}))
     created_program = await programs_collection.find_one({"_id": new_program.inserted_id})
     return created_program
+
+
+@app.delete("/programs/{program_id}")
+async def delete_program(program_id: str):
+    result = await programs_collection.delete_one({"_id": ObjectId(program_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Program not found")
+    return {"status": "deleted"}

@@ -137,7 +137,7 @@ function Dashboard({db,onAddTrainer}){
 }
 
 // ─── Trainers Page ─────────────────────────────────────────────────────────────
-function TrainersPage({db,onAdd,onDelete,onEdit,onSelect}){
+function TrainersPage({db,onAdd,onDelete,onEdit}){
   const {trainers,sessions,programs}=db;
   return <div style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -149,20 +149,32 @@ function TrainersPage({db,onAdd,onDelete,onEdit,onSelect}){
         const prog=t.programId?programs.find(p=>p.id===t.programId):null;
         const wc=getWeekCount(sessions,t.id);
         const freq=prog?.sessionsPerWeek||0;
-        return <div key={t.id} onClick={()=>onSelect(t)} style={{background:"#fff",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(33,150,243,.08)",cursor:"pointer"}}>
+        const pct=freq?Math.min(Math.round(wc/freq*100),100):0;
+        
+        return <div key={t.id} style={{background:"#fff",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(33,150,243,.08)",transition:"transform .15s,box-shadow .15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(33,150,243,.15)"}}
+          onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 12px rgba(33,150,243,.08)"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}><Avatar trainer={t} size={44}/>
-            <div><div style={{fontWeight:600,fontSize:15,color:"#1a1a2e"}}>{t.fname} {t.lname}</div></div>
+            <div><div style={{fontWeight:600,fontSize:15,color:"#1a1a2e"}}>{t.fname} {t.lname}</div><div style={{fontSize:12,color:"#888",marginTop:2}}>{t.email}</div></div>
           </div>
+          <div style={{fontSize:12,color:"#666",marginBottom:4}}>🎯 {t.goal}</div>
+          <div style={{fontSize:12,color:"#666",marginBottom:12}}>📋 {prog?`${prog.name} (${freq}× בשבוע)`:"ללא תוכנית"}</div>
+          {freq>0&&<>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{color:"#888"}}>אימונים השבוע</span><span style={{fontWeight:600,color:"#1565C0"}}>{wc}/{freq}</span></div>
+            <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden",marginBottom:12}}>
+              <div style={{width:pct+"%",height:"100%",borderRadius:4,background:pct>=100?"#4CAF50":pct>=60?"#2196F3":"#FF9800",transition:"width .4s"}}/>
+            </div>
+          </>}
           <div style={{display:"flex",gap:6}}>
-            <Btn sm full onClick={e=>{e.stopPropagation();onEdit(t);}}>✏️ עריכה</Btn>
-            <Btn sm full danger onClick={e=>{e.stopPropagation();onDelete(t.id);}}>🗑️ מחיקה</Btn>
+            <Btn sm full onClick={()=>onEdit(t)}>✏️ עריכה</Btn>
+            <Btn sm full danger onClick={()=>onDelete(t.id)}>🗑️ מחיקה</Btn>
           </div>
         </div>;
       })}
+      {!trainers.length&&<div style={{gridColumn:"1/-1",textAlign:"center",padding:"60px 0",color:"#bbb"}}><div style={{fontSize:48,marginBottom:12}}>👥</div><div style={{fontSize:16}}>אין מתאמנים עדיין</div></div>}
     </div>
   </div>;
 }
-
 // ─── Trainer Detail ────────────────────────────────────────────────────────────
 function TrainerDetail({trainer,db,onBack,onLogSession}){
   const {sessions,programs}=db;
@@ -424,12 +436,102 @@ function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign}){
 }
 // ─── Modals ───────────────────────────────────────────────────────────────────
 function LogSessionModal({open,onClose,db,defaultTrainer,onSave}){
-  return <Modal open={open} onClose={onClose} title="רישום אימון"><Btn onClick={onClose}>סגור</Btn></Modal>;
+  const {trainers}=db;
+  const [trainerId,setTrainerId]=useState(defaultTrainer?.id||trainers[0]?.id||"");
+  const [date,setDate]=useState(new Date().toISOString().slice(0,10));
+  const [type,setType]=useState("כוח");
+  useEffect(()=>{ if(defaultTrainer) setTrainerId(defaultTrainer.id); if(!open) setDate(new Date().toISOString().slice(0,10)); },[open,defaultTrainer]);
+  return <Modal open={open} onClose={onClose} title="רישום אימון">
+    <Sel label="מתאמן" value={trainerId} onChange={e=>setTrainerId(Number(e.target.value))}>
+      {trainers.map(t=><option key={t.id} value={t.id}>{t.fname} {t.lname}</option>)}
+    </Sel>
+    <Inp label="תאריך" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
+    <Sel label="סוג אימון" value={type} onChange={e=>setType(e.target.value)}>
+      {["כוח","קרדיו","גמישות","פונקציונלי","HIIT","שיקום"].map(t=><option key={t}>{t}</option>)}
+    </Sel>
+    <div style={{display:"flex",gap:8,marginTop:8}}>
+      <Btn primary onClick={()=>{onSave({trainerId:Number(trainerId),date,type});onClose();}}>שמור אימון</Btn>
+      <Btn onClick={onClose}>ביטול</Btn>
+    </div>
+  </Modal>;
 }
 function TrainerModal({open,onClose,onSave,initial,programs}){
-  return <Modal open={open} onClose={onClose} title="מתאמן"><Btn onClick={onClose}>סגור</Btn></Modal>;
-}
+  const defaultGoals = ["חיזוק שרירים","ירידה במשקל","כושר כללי","שיפור ביצועים","שיקום"];
+  
+  const blank={fname:"",lname:"",email:"",phone:"",password:"",weight:"",goal:"חיזוק שרירים",programId:null};
+  const [form,setForm]=useState(blank);
+  
+  useEffect(()=>{ 
+    if(open) setForm(initial ? {...initial} : blank);
+  },[open, initial]);
 
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  
+  // ─── בדיקות ולידציה ───
+  const isFnameValid = form.fname?.trim().length > 0;
+  const isLnameValid = form.lname?.trim().length > 0;
+  const isPasswordValid = form.password && form.password.trim().length > 0;
+  
+  // בודק טלפון ישראלי תקין (מתחיל ב-0, מכיל 9-10 ספרות, יכול לכלול מקף)
+  const isPhoneValid = /^0\d{1,2}-?\d{7}$/.test(form.phone?.trim() || "");
+  
+  // הכפתור יהיה פעיל רק אם כל הבדיקות עברו בהצלחה
+  const valid = isFnameValid && isLnameValid && isPasswordValid && isPhoneValid;
+
+  // יצירת הודעת שגיאה מותאמת אישית שתעזור למשתמש
+  let errorMsg = "";
+  if (!isFnameValid || !isLnameValid) errorMsg = "יש למלא שם פרטי ושם משפחה";
+  else if (!isPhoneValid && form.phone?.trim().length > 0) errorMsg = "מספר הטלפון אינו תקין (לדוגמה: 050-1234567)";
+  else if (!isPhoneValid) errorMsg = "יש למלא מספר טלפון תקין";
+  else if (!isPasswordValid) errorMsg = "שדה סיסמה הינו חובה";
+
+  // מציאת שם התוכנית הנוכחית כדי להציג אותה כטקסט בלבד
+  const currentProgramName = form.programId ? programs.find(p=>p.id===form.programId)?.name : null;
+
+  return <Modal open={open} onClose={onClose} title={initial?"עריכת מתאמן":"הוספת מתאמן חדש"}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Inp label="שם פרטי *" value={form.fname} onChange={e=>set("fname",e.target.value)} placeholder="שם פרטי"/>
+      <Inp label="שם משפחה *" value={form.lname} onChange={e=>set("lname",e.target.value)} placeholder="שם משפחה"/>
+    </div>
+    
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Inp label="אימייל (אופציונלי)" type="email" value={form.email||""} onChange={e=>set("email",e.target.value)} placeholder="email@example.com"/>
+      <Inp label="סיסמה * (לכניסת מתאמן)" type="password" value={form.password||""} onChange={e=>set("password",e.target.value)} placeholder="הזן סיסמה"/>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Inp label="טלפון *" value={form.phone||""} onChange={e=>set("phone",e.target.value)} placeholder="050-0000000"/>
+      <Inp label="משקל - ק״ג (אופציונלי)" type="number" value={form.weight||""} onChange={e=>set("weight",e.target.value)} placeholder="למשל: 75"/>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      {/* החזרנו את מטרת האימון לרשימה הרגילה */}
+      <Sel label="מטרת אימון (אופציונלי)" value={form.goal||""} onChange={e=>set("goal",e.target.value)}>
+        {defaultGoals.map(g=><option key={g}>{g}</option>)}
+      </Sel>
+      
+      {/* תוכנית האימון מוצגת כטקסט נעול לקריאה בלבד */}
+      <div>
+        <label style={{fontSize:12,color:"#666",display:"block",marginBottom:4,fontWeight:500}}>תוכנית אימון משויכת</label>
+        <div style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",background:"#f5f5f5",color:currentProgramName?"#1565C0":"#888",fontWeight:currentProgramName?600:400,fontFamily:"inherit",boxSizing:"border-box", cursor:"not-allowed"}}>
+          {currentProgramName ? `📋 ${currentProgramName}` : "❌ ללא תוכנית"}
+        </div>
+        <div style={{fontSize:11, color:"#888", marginTop:4}}>השיוך מתבצע מעמוד התוכניות</div>
+      </div>
+    </div>
+    
+    {/* תצוגת השגיאה לפני כפתור השמירה */}
+    {!valid && <div style={{color:"#d32f2f",fontSize:13,fontWeight:600,marginTop:12,textAlign:"center",background:"#ffebee",padding:"6px",borderRadius:"6px"}}>{errorMsg}</div>}
+
+    <div style={{display:"flex",gap:8,marginTop:16}}>
+      <Btn primary disabled={!valid} full onClick={()=>{
+        onSave(form);
+        onClose();
+      }}>{initial?"שמור שינויים":"הוסף מתאמן"}</Btn>
+      <Btn full onClick={onClose} style={{background:"#f0f0f0", color:"#333"}}>ביטול</Btn>
+    </div>
+  </Modal>;
+}
 export default function App(){
   const [db,setDb]=useState(null);
   const [page,setPage]=useState("dashboard");
@@ -471,7 +573,15 @@ export default function App(){
   // פונקציות למתאמנים שהיו חסרות
   const addTrainer=form=>updateDb(prev=>({...prev,trainers:[...prev.trainers,{...form,id:prev.nextTrainerId,avatar:""}],nextTrainerId:prev.nextTrainerId+1}));
   const editTrainer=form=>updateDb(prev=>({...prev,trainers:prev.trainers.map(t=>t.id===form.id?{...t,...form}:t)}));
-  const deleteTrainer=id=>updateDb(prev=>({...prev,trainers:prev.trainers.filter(t=>t.id!==id),sessions:prev.sessions.filter(s=>s.trainerId!==id)}));
+  // הוספת חלונית וידוא לפני מחיקת מתאמן כדי למנוע טעויות
+  const deleteTrainer = id => {
+    if(!window.confirm("האם אתה בטוח שברצונך למחוק מתאמן זה? הפעולה תמחק גם את כל היסטוריית האימונים שלו.")) return;
+    updateDb(prev => ({
+      ...prev,
+      trainers: prev.trainers.filter(t => t.id !== id),
+      sessions: prev.sessions.filter(s => s.trainerId !== id)
+    }));
+  };
   const logSession=session=>updateDb(prev=>({...prev,sessions:[...prev.sessions,{...session,id:prev.nextSessionId}],nextSessionId:prev.nextSessionId+1}));
 
   const saveProgram = async (prog) => {
@@ -547,18 +657,10 @@ export default function App(){
     {saving&&<div style={{position:"fixed",bottom:20,left:20,background:"#1565C0",color:"#fff",padding:10}}>שומר...</div>}
 
     {showBuilder
-      // תוקן: הוספת programs={db.programs} כדי שהולידציה של שם כפול לא תקרוס
       ? <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
       : <>
-          {page==="dashboard"&&!selectedTrainer&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")}/>}
-          
-          {/* תוקן: הוספת onDelete ו-onEdit למסך המתאמנים */}
-          {page==="trainers"&&!selectedTrainer&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}} onSelect={t=>setSelectedTrainer(t)}/>}
-          
-          {/* תוקן: הוספת אפשרות רישום אימון מהפרופיל האישי */}
-          {page==="trainers"&&selectedTrainer&&<TrainerDetail trainer={selectedTrainer} db={db} onBack={()=>setSelectedTrainer(null)} onLogSession={t=>{setLogTarget(t);setModal("log-session");}}/>}
-          
-          {/* תוקן: הוספת onDelete למסך התוכניות */}
+          {page==="dashboard"&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")}/>}
+          {page==="trainers"&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}} />}
           {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} onDelete={deleteProgram} onAssign={assignProgram} />}
         </>
     }
