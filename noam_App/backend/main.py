@@ -24,6 +24,7 @@ db = client.noamtrains
 programs_collection = db.get_collection("programs")
 trainers_collection = db.get_collection("trainers")
 sessions_collection = db.get_collection("sessions")
+saved_sets_collection = db.get_collection("saved_sets") # אוסף חדש לסטים השמורים
 
 # Custom ObjectId validation for Pydantic
 class PyObjectId(ObjectId):
@@ -61,7 +62,15 @@ class ProgramModel(BaseModel):
     level: str = "בינוני"
     sessionsPerWeek: int = 3
     days: List[Day] = []
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
 
+class SavedSetModel(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    name: str
+    exercises: List[Exercise] = []
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -76,8 +85,7 @@ class TrainerModel(BaseModel):
     password: str
     weight: Optional[str] = ""
     goal: Optional[str] = ""
-    programId: Optional[str] = None # String to hold Program ID
-
+    programId: Optional[str] = None
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -88,11 +96,31 @@ class SessionModel(BaseModel):
     trainerId: str
     date: str
     type: str
-
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
+# --- SAVED SETS ROUTES ---
+@app.get("/saved_sets", response_model=List[SavedSetModel])
+async def get_saved_sets():
+    return await saved_sets_collection.find().to_list(100)
+
+@app.post("/saved_sets", response_model=SavedSetModel)
+async def create_saved_set(saved_set: SavedSetModel):
+    new_set = await saved_sets_collection.insert_one(saved_set.dict(by_alias=True, exclude={"id"}))
+    return await saved_sets_collection.find_one({"_id": new_set.inserted_id})
+
+@app.put("/saved_sets/{id}", response_model=SavedSetModel)
+async def update_saved_set(id: str, saved_set: SavedSetModel):
+    update_data = saved_set.dict(by_alias=True, exclude={"id"}, exclude_unset=True)
+    await saved_sets_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    return await saved_sets_collection.find_one({"_id": ObjectId(id)})
+
+@app.delete("/saved_sets/{id}")
+async def delete_saved_set(id: str):
+    await saved_sets_collection.delete_one({"_id": ObjectId(id)})
+    return {"status": "deleted"}
 
 # --- PROGRAMS ROUTES ---
 @app.get("/programs", response_model=List[ProgramModel])
@@ -113,10 +141,8 @@ async def update_program(id: str, program: ProgramModel):
 @app.delete("/programs/{id}")
 async def delete_program(id: str):
     await programs_collection.delete_one({"_id": ObjectId(id)})
-    # Remove programId from associated trainers
     await trainers_collection.update_many({"programId": id}, {"$set": {"programId": None}})
     return {"status": "deleted"}
-
 
 # --- TRAINERS ROUTES ---
 @app.get("/trainers", response_model=List[TrainerModel])
@@ -130,7 +156,6 @@ async def create_trainer(trainer: TrainerModel):
 
 @app.put("/trainers/{id}")
 async def update_trainer(id: str, data: dict = Body(...)):
-    # Remove _id and id if they exist in the update body
     data.pop("_id", None)
     data.pop("id", None)
     await trainers_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
@@ -139,9 +164,8 @@ async def update_trainer(id: str, data: dict = Body(...)):
 @app.delete("/trainers/{id}")
 async def delete_trainer(id: str):
     await trainers_collection.delete_one({"_id": ObjectId(id)})
-    await sessions_collection.delete_many({"trainerId": id}) # Clean up sessions
+    await sessions_collection.delete_many({"trainerId": id})
     return {"status": "deleted"}
-
 
 # --- SESSIONS ROUTES ---
 @app.get("/sessions", response_model=List[SessionModel])

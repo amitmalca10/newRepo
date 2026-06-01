@@ -2,25 +2,22 @@ import { useState, useEffect, useCallback } from "react";
 
 // ─── API Configuration ────────────────────────────────────────────────────────
 const API_URL = import.meta.env?.VITE_API_URL || "http://localhost:8000";
-const DB_KEY = "noamtrains_data_v3";
+const DB_KEY = "noamtrains_data_v4";
 
 async function loadLocalDB() {
   try { const r = localStorage.getItem(DB_KEY); if (r) return JSON.parse(r); } catch (_) {}
   return null;
 }
-
 async function saveLocalDB(data) {
   try { localStorage.setItem(DB_KEY, JSON.stringify(data)); } catch (e) { console.error(e); }
 }
 
-const defaultData = { trainers: [], programs: [], sessions:[] };
+const defaultData = { trainers: [], programs: [], sessions:[], savedSets: [] };
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 const COLORS = ["#2196F3","#1976D2","#00BCD4","#0097A7","#26A69A"];
 const initials = t => (t.fname?.[0]||"")+(t.lname?.[0]||"");
-
 const uid = () => Date.now().toString() + Math.floor(Math.random()*1000).toString();
-
 const colorFor = id => {
   const num = typeof id === 'string' ? id.charCodeAt(id.length-1) : id;
   return COLORS[(num||0) % COLORS.length];
@@ -40,41 +37,27 @@ const getWeekCount = (sessions,tid) => {
 // ─── Global Responsive CSS ────────────────────────────────────────────────────
 const globalCss = `
   * { box-sizing: border-box; }
-  
-  /* עיצוב גלילה (Scrollbar) יפה למחשב */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* 📱 התאמות מיוחדות למובייל */
   @media (max-width: 768px) {
     .app-layout { flex-direction: column-reverse !important; padding-bottom: env(safe-area-inset-bottom); }
-    
-    /* הפיכת תפריט הצד לתפריט תחתון באפליקציה */
     .sidebar { width: 100% !important; height: auto !important; padding-top: 0 !important; flex-direction: row !important; justify-content: space-around !important; padding: 8px 4px !important; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); }
     .sidebar-header { display: none !important; }
     .sidebar-item { flex-direction: column !important; gap: 4px !important; padding: 6px !important; border-right: none !important; font-size: 11px !important; justify-content: center !important; text-align: center; }
     .sidebar-item.active { background: rgba(255,255,255,0.2) !important; border-radius: 8px !important; }
-    
     .main-pad { padding: 16px !important; }
-    
-    /* שבירת גריד למובייל */
     .mob-stack { grid-template-columns: 1fr !important; display: flex !important; flex-direction: column !important; }
     .mob-grid-2 { grid-template-columns: 1fr 1fr !important; }
-    
-    /* בונה התוכניות במובייל */
     .builder-grid { display: flex !important; flex-direction: column !important; }
     .exercise-row { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
     .exercise-inputs { grid-template-columns: 1fr 1fr !important; padding-right: 0 !important; gap: 10px !important; }
     .exercise-inputs .full-w { grid-column: 1 / -1 !important; }
-    
-    /* עמוד תוכניות במובייל */
     .prog-card { flex-direction: column !important; align-items: stretch !important; gap: 16px !important; }
     .prog-stats { margin-left: 0 !important; justify-content: space-between !important; width: 100% !important; gap: 10px !important; }
     .prog-actions { justify-content: space-between !important; width: 100% !important; margin-top: 10px; }
-    
-    /* מודאלים במובייל */
     .modal-box { width: 95vw !important; padding: 20px 16px !important; }
     .modal-grid { grid-template-columns: 1fr !important; }
   }
@@ -119,11 +102,12 @@ function Sidebar({page,setPage}){
     {id:"dashboard",icon:"🏠",label:"סקירה כללית"},
     {id:"trainers",icon:"👥",label:"מתאמנים"},
     {id:"programs",icon:"📋",label:"תוכניות אימון"},
+    {id:"savedSets",icon:"🗂️",label:"תבניות וסטים"},
   ];
   return <div className="sidebar" style={{width:200,flexShrink:0,background:"#1565C0",display:"flex",flexDirection:"column",paddingTop:28}}>
     <div className="sidebar-header" style={{textAlign:"center",marginBottom:32,paddingBottom:20,borderBottom:"1px solid rgba(255,255,255,.15)"}}>
       <div style={{fontSize:28,marginBottom:4}}>🏋️</div>
-      <div style={{color:"#fff",fontWeight:700,fontSize:18}}>FitCoach</div>
+      <div style={{color:"#fff",fontWeight:700,fontSize:18}}>לא נשית איי</div>
     </div>
     {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 20px",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"4px solid #fff":"4px solid transparent",fontWeight:page===n.id?600:400,fontSize:14,transition:"all .15s"}}>
       <span>{n.icon}</span><span>{n.label}</span>
@@ -154,8 +138,10 @@ function Dashboard({db,onAddTrainer}){
 }
 
 // ─── Trainers Page ─────────────────────────────────────────────────────────────
+// ─── Trainers Page ─────────────────────────────────────────────────────────────
 function TrainersPage({db,onAdd,onDelete,onEdit}){
   const {trainers,sessions,programs}=db;
+  
   return <div className="main-pad" style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
       <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>מתאמנים</div>
@@ -163,22 +149,40 @@ function TrainersPage({db,onAdd,onDelete,onEdit}){
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:16}}>
       {trainers.map(t=>{
-        const prog=t.programId?programs.find(p=>p.id===t.programId):null;
-        const wc=getWeekCount(sessions,t.id);
-        const freq=prog?.sessionsPerWeek||0;
-        const pct=freq?Math.min(Math.round(wc/freq*100),100):0;
+        // כאן הלוגיקה שמחברת בין המתאמן לתוכנית שלו
+        const prog = t.programId ? programs.find(p => p.id === t.programId) : null;
+        const wc = getWeekCount(sessions,t.id);
+        const freq = prog?.sessionsPerWeek || 0;
+        const pct = freq ? Math.min(Math.round(wc/freq*100),100) : 0;
+        
         return <div key={t.id} style={{background:"#fff",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(33,150,243,.08)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}><Avatar trainer={t} size={44}/>
-            <div><div style={{fontWeight:600,fontSize:15,color:"#1a1a2e"}}>{t.fname} {t.lname}</div><div style={{fontSize:12,color:"#888",marginTop:2}}>{t.phone}</div></div>
-          </div>
-          <div style={{fontSize:12,color:"#666",marginBottom:4}}>🎯 {t.goal||"לא הוגדר"}</div>
-          <div style={{fontSize:12,color:"#666",marginBottom:12}}>📋 {prog?`${prog.name} (${freq}× בשבוע)`:"ללא תוכנית"}</div>
-          {freq>0&&<>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{color:"#888"}}>אימונים השבוע</span><span style={{fontWeight:600,color:"#1565C0"}}>{wc}/{freq}</span></div>
-            <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden",marginBottom:12}}>
-              <div style={{width:pct+"%",height:"100%",borderRadius:4,background:pct>=100?"#4CAF50":pct>=60?"#2196F3":"#FF9800"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+            <Avatar trainer={t} size={44}/>
+            <div>
+              <div style={{fontWeight:600,fontSize:15,color:"#1a1a2e"}}>{t.fname} {t.lname}</div>
+              <div style={{fontSize:12,color:"#888",marginTop:2}}>{t.phone}</div>
             </div>
-          </>}
+          </div>
+          
+          <div style={{fontSize:12,color:"#666",marginBottom:4}}>🎯 {t.goal||"לא הוגדר"}</div>
+          
+          {/* כאן מוצג שם התוכנית המשויכת */}
+          <div style={{fontSize:12,color:"#1565C0",marginBottom:12,fontWeight:600}}>
+            📋 {prog ? `${prog.name}` : "❌ ללא תוכנית אימון"}
+          </div>
+
+          {freq > 0 && (
+            <>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                <span style={{color:"#888"}}>אימונים השבוע</span>
+                <span style={{fontWeight:600,color:"#1565C0"}}>{wc}/{freq}</span>
+              </div>
+              <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden",marginBottom:12}}>
+                <div style={{width:pct+"%",height:"100%",borderRadius:4,background:pct>=100?"#4CAF50":pct>=60?"#2196F3":"#FF9800"}}/>
+              </div>
+            </>
+          )}
+          
           <div style={{display:"flex",gap:6}}>
             <Btn sm full onClick={()=>onEdit(t)}>✏️ עריכה</Btn>
             <Btn sm full danger onClick={()=>onDelete(t.id)}>🗑️ מחיקה</Btn>
@@ -189,13 +193,111 @@ function TrainersPage({db,onAdd,onDelete,onEdit}){
     </div>
   </div>;
 }
+// ─── Saved Sets Page & Builder ────────────────────────────────────────────────
+function SavedSetsPage({db,onAdd,onEdit,onDelete}){
+  const {savedSets}=db;
+  return <div className="main-pad" style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+      <div>
+        <div style={{fontSize:24,fontWeight:700,color:"#1a1a2e"}}>תבניות וסטים שמורים</div>
+        <div style={{fontSize:14,color:"#666",marginTop:4}}>צור תבניות מוכנות מראש (למשל: חימום, סדרת בטן) לשילוב מהיר בתוכניות</div>
+      </div>
+      <Btn primary onClick={onAdd}>+ תבנית חדשה</Btn>
+    </div>
+    
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
+      {savedSets.map(s=>(
+        <div key={s.id} onClick={()=>onEdit(s)} style={{background:"#fff",borderRadius:12,padding:"20px",cursor:"pointer",boxShadow:"0 2px 10px rgba(33,150,243,.06)",borderRight:"6px solid #00BCD4"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+            <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>{s.name}</div>
+            <button onClick={(e)=>{e.stopPropagation(); onDelete(s.id);}} style={{background:"#fff0f0",color:"#d32f2f",border:"none",borderRadius:8,width:32,height:32,cursor:"pointer"}}>🗑</button>
+          </div>
+          <div style={{fontSize:14,color:"#666",marginBottom:16}}>{s.exercises?.length||0} תרגילים בסט</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {s.exercises?.slice(0,3).map(e=><span key={e.id} style={{background:"#f5f5f5",padding:"4px 8px",borderRadius:6,fontSize:11,color:"#555"}}>{e.name}</span>)}
+            {s.exercises?.length>3&&<span style={{background:"#e3f2fd",padding:"4px 8px",borderRadius:6,fontSize:11,color:"#1565C0"}}>+{s.exercises.length-3}</span>}
+          </div>
+        </div>
+      ))}
+      {!savedSets.length&&<div style={{gridColumn:"1/-1",textAlign:"center",padding:"60px 0",color:"#bbb",background:"#fff",borderRadius:16}}><div style={{fontSize:48,marginBottom:12}}>🗂️</div><div style={{fontSize:16}}>אין תבניות שמורות. צור תבנית כדי לחסוך זמן!</div></div>}
+    </div>
+  </div>;
+}
 
-// ─── Program Builder ─────────────────────────────────────
-function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
+function SavedSetBuilder({setObj:initSet, onSave, onCancel}){
+  const isNew = !initSet;
+  const blankSet = {name:"", exercises:[]};
+  const [prog, setProg] = useState(isNew ? blankSet : {...initSet, exercises:initSet.exercises?.map(e=>({...e}))||[]});
+
+  const updExercises = exs => setProg(p=>({...p, exercises:exs}));
+  const addExercise = () => updExercises([...prog.exercises, {id:Date.now(),name:"",sets:3,reps:10,rest:60,note:""}]);
+  const removeExercise = id => updExercises(prog.exercises.filter(e=>e.id!==id));
+  const updExercise = (id,patch) => updExercises(prog.exercises.map(e=>e.id===id?{...e,...patch}:e));
+  const moveEx = (idx,dir) => {
+    const exs=[...prog.exercises]; const to=idx+dir;
+    if(to<0||to>=exs.length) return;
+    [exs[idx],exs[to]]=[exs[to],exs[idx]];
+    updExercises(exs);
+  };
+
+  const valid = prog.name.trim() && prog.exercises.length > 0 && prog.exercises.every(e => e.name.trim());
+
+  return <div className="main-pad" style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+      <div style={{fontSize:22,fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תבנית חדשה":"✏️ עריכת תבנית"}</div>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0"}}>ביטול</Btn>
+        <Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור תבנית</Btn>
+      </div>
+    </div>
+
+    <div style={{background:"#fff",borderRadius:16,padding:"24px",marginBottom:24,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+      <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>שם התבנית / סט</label>
+      <input style={{width:"100%",maxWidth:400,padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit"}} value={prog.name} onChange={e=>setProg({...prog,name:e.target.value})} placeholder="למשל: סדרת חימום מלאה"/>
+    </div>
+
+    <div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24, paddingBottom:16, borderBottom:"1px solid #f0f0f0"}}>
+        <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>תרגילים בסט זה</div>
+        <Btn primary onClick={addExercise}>+ הוסף תרגיל</Btn>
+      </div>
+
+      {prog.exercises.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:"#bbb", background:"#f8f9fa", borderRadius:12}}><div style={{fontSize:40,marginBottom:12}}>🏋️</div><div style={{fontSize:15, fontWeight:500}}>הוסף תרגילים לתבנית</div></div>}
+
+      {prog.exercises.map((ex,i)=><div key={ex.id} style={{background:"#ffffff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #e0e0e0", boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+        <div className="exercise-row" style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          <div style={{display:"flex",flexDirection:"row",gap:8}}>
+            <div style={{background:"#e0f7fa",color:"#0097a7",borderRadius:8,width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700}}>{i+1}</div>
+            <button onClick={()=>moveEx(i,-1)} disabled={i===0} style={{background:"none",border:"none",cursor:i===0?"default":"pointer",color:i===0?"#ddd":"#888"}}>▲</button>
+            <button onClick={()=>moveEx(i,1)} disabled={i===prog.exercises.length-1} style={{background:"none",border:"none",cursor:i===prog.exercises.length-1?"default":"pointer",color:i===prog.exercises.length-1?"#ddd":"#888"}}>▼</button>
+          </div>
+          <input value={ex.name} onChange={e=>updExercise(ex.id,{name:e.target.value})} placeholder="שם התרגיל" style={{flex:1, maxWidth:"400px", padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:15,direction:"rtl",outline:"none",fontWeight:600}}/>
+          <button onClick={()=>removeExercise(ex.id)} style={{background:"#ffebee",border:"none",borderRadius:8,cursor:"pointer",color:"#d32f2f",width:36,height:36}}>🗑</button>
+        </div>
+        
+        {/* שימו לב - בסט שמור אין צורך בעמודת המשקל! */}
+        <div className="exercise-inputs" style={{display:"grid",gridTemplateColumns:"80px 80px 100px 1fr",gap:16,paddingRight:40}}>
+          {[{label:"סטים",key:"sets",type:"number",min:1},{label:"חזרות",key:"reps",type:"number",min:1},{label:"מנוחה (שנ')",key:"rest",type:"number",min:0}].map(f=><div key={f.key}>
+            <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6}}>{f.label}</label>
+            <input type={f.type} min={f.min} value={ex[f.key]||""} onChange={e=>updExercise(ex.id,{[f.key]:e.target.value===""?null:Number(e.target.value)})} style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,boxSizing:"border-box"}}/>
+          </div>)}
+          <div className="full-w">
+            <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6}}>הערות</label>
+            <input value={ex.note||""} onChange={e=>updExercise(ex.id,{note:e.target.value})} style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,boxSizing:"border-box"}} placeholder="דגשים לתרגיל..."/>
+          </div>
+        </div>
+      </div>)}
+    </div>
+  </div>;
+}
+
+// ─── Program Builder (המעודכן עם אפשרות ייבוא הסטים) ─────────────────────
+function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel}){
   const isNew=!initProg;
   const blankProg={name:"",desc:"",level:"בינוני",sessionsPerWeek:3,days:[]};
   const [prog,setProg]=useState(isNew?blankProg:{...initProg,days:initProg.days?.map(d=>({...d,exercises:d.exercises?.map(e=>({...e}))}))||[]});
   const [selDay,setSelDay]=useState(0);
+  const [importModalOpen, setImportModalOpen]=useState(false);
 
   const upd=patch=>setProg(p=>({...p,...patch}));
 
@@ -214,11 +316,27 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
   const updExercises=exs=>setProg(p=>({...p,days:p.days.map((d,i)=>i===selDay?{...d,exercises:exs}:d)}));
   
   const addExercise=()=>updExercises([...dayExercises,{id:Date.now(),name:"",sets:3,reps:10,rest:60,weight:"",note:""}]);
+  
+  // פונקציה לייבוא סט שלם ושפיכתו לתוך יום האימון
+  const importSavedSet = (setId) => {
+    const setToImport = savedSets.find(s => s.id === setId);
+    if(!setToImport) return;
+    
+    // מעתיקים את התרגילים מהתבנית, נותנים להם ID חדש ומאפסים משקל
+    const importedExercises = setToImport.exercises.map(ex => ({
+      ...ex, 
+      id: Date.now() + Math.floor(Math.random() * 10000),
+      weight: "" // מבטיחים שעמודת המשקל ריקה להתאמה אישית
+    }));
+    
+    updExercises([...dayExercises, ...importedExercises]);
+    setImportModalOpen(false);
+  };
+
   const removeExercise=id=>updExercises(dayExercises.filter(e=>e.id!==id));
   const updExercise=(id,patch)=>updExercises(dayExercises.map(e=>e.id===id?{...e,...patch}:e));
   const moveEx=(idx,dir)=>{
-    const exs=[...dayExercises];
-    const to=idx+dir;
+    const exs=[...dayExercises]; const to=idx+dir;
     if(to<0||to>=exs.length) return;
     [exs[idx],exs[to]]=[exs[to],exs[idx]];
     updExercises(exs);
@@ -231,11 +349,11 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
 
   let errorMsg = "";
   if (!prog.name.trim()) errorMsg = "יש להזין שם לתוכנית";
-  else if (isDuplicateName) errorMsg = "קיימת כבר תוכנית אימון עם השם הזה";
-  else if (prog.days.length !== Number(prog.sessionsPerWeek)) errorMsg = `יש להגדיר בדיוק ${prog.sessionsPerWeek} ימי אימון (בנית ${prog.days.length} עד כה)`;
+  else if (isDuplicateName) errorMsg = "קיימת כבר תוכנית עם השם הזה";
+  else if (prog.days.length !== Number(prog.sessionsPerWeek)) errorMsg = `יש להגדיר בדיוק ${prog.sessionsPerWeek} ימי אימון`;
   else if (!daysHaveExercises) errorMsg = "לכל יום חייב להיות לפחות תרגיל 1";
 
-  const inputStyle={width:"100%",padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.2s"};
+  const inputStyle={width:"100%",padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
 
   return <div className="main-pad" style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div className="exercise-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -246,9 +364,9 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
         <Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור</Btn>
       </div>
     </div>
-
+{/* כאן בוצע השינוי: gridTemplateColumns מחולק ל-4 עמודות שוות */}
     <div style={{background:"#fff",borderRadius:16,padding:"24px",marginBottom:24,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
-      <div className="mob-stack" style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr",gap:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"1.5fr 2fr 1fr 1fr",gap:16}}>
         <div>
           <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>שם התוכנית</label>
           <input style={{...inputStyle, borderColor: isDuplicateName ? "#d32f2f" : "#e0e0e0"}} value={prog.name} onChange={e=>upd({name:e.target.value})} placeholder="לדוגמה: פול בודי חיזוק"/>
@@ -257,21 +375,18 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
           <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>תיאור</label>
           <input style={inputStyle} value={prog.desc} onChange={e=>upd({desc:e.target.value})} placeholder="תיאור (אופציונלי)"/>
         </div>
-        <div className="mob-grid-2" style={{display:"grid", gridTemplateColumns:"1fr", gap:16}}>
-           <div>
-            <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>רמת קושי</label>
-            <select style={{...inputStyle, background:"#fff"}} value={prog.level} onChange={e=>upd({level:e.target.value})}>
-              {["מתחיל","בינוני","מתקדם"].map(l=><option key={l}>{l}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>אימונים בשבוע</label>
-            <input style={inputStyle} type="number" min={1} max={7} value={prog.sessionsPerWeek} onChange={e=>upd({sessionsPerWeek:Number(e.target.value)})}/>
-          </div>
+        <div>
+          <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>רמת קושי</label>
+          <select style={{...inputStyle, background:"#fff"}} value={prog.level} onChange={e=>upd({level:e.target.value})}>
+            {["מתחיל","בינוני","מתקדם"].map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>אימונים בשבוע</label>
+          <input style={inputStyle} type="number" min={1} max={7} value={prog.sessionsPerWeek} onChange={e=>upd({sessionsPerWeek:Number(e.target.value)})}/>
         </div>
       </div>
     </div>
-
     <div className="builder-grid" style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:24,alignItems:"start"}}>
       <div style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -289,17 +404,15 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
 
       {prog.days[selDay]?<div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24, paddingBottom:16, borderBottom:"1px solid #f0f0f0"}}>
-          <div>
-            <input value={prog.days[selDay].name} onChange={e=>renameDay(selDay,e.target.value)}
-              style={{fontSize:20,fontWeight:700,color:"#1a1a2e",border:"none",outline:"none",background:"transparent",fontFamily:"inherit",direction:"rtl", borderBottom:"2px solid transparent", paddingBottom:4, width:"100%"}} placeholder="שם היום (למשל: כוח עליון)"/>
+          <div><input value={prog.days[selDay].name} onChange={e=>renameDay(selDay,e.target.value)} style={{fontSize:20,fontWeight:700,color:"#1a1a2e",border:"none",outline:"none",background:"transparent",fontFamily:"inherit",direction:"rtl", borderBottom:"2px solid transparent", paddingBottom:4, width:"100%"}} placeholder="שם היום (למשל: כוח עליון)"/></div>
+          <div style={{display:"flex", gap:8}}>
+            {/* כפתור חדש לייבוא תבנית */}
+            <Btn style={{background:"#e0f7fa", color:"#0097a7"}} onClick={()=>setImportModalOpen(true)}>📥 ייבא סט שמור</Btn>
+            <Btn primary onClick={addExercise}>+ הוסף תרגיל</Btn>
           </div>
-          <Btn primary onClick={addExercise}>+ הוסף תרגיל</Btn>
         </div>
 
-        {dayExercises.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:"#bbb", background:"#f8f9fa", borderRadius:12}}>
-          <div style={{fontSize:40,marginBottom:12}}>🏋️</div>
-          <div style={{fontSize:15, fontWeight:500, color:"#d32f2f"}}>חובה להוסיף לפחות תרגיל אחד</div>
-        </div>}
+        {dayExercises.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:"#bbb", background:"#f8f9fa", borderRadius:12}}><div style={{fontSize:40,marginBottom:12}}>🏋️</div><div style={{fontSize:15, fontWeight:500, color:"#d32f2f"}}>חובה להוסיף לפחות תרגיל אחד ליום זה</div></div>}
 
         {dayExercises.map((ex,i)=><div key={ex.id} style={{background:"#ffffff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #e0e0e0", boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
           <div className="exercise-row" style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
@@ -308,19 +421,17 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
               <button onClick={()=>moveEx(i,-1)} disabled={i===0} style={{background:"none",border:"none",cursor:i===0?"default":"pointer",color:i===0?"#ddd":"#888",fontSize:14}}>▲</button>
               <button onClick={()=>moveEx(i,1)} disabled={i===dayExercises.length-1} style={{background:"none",border:"none",cursor:i===dayExercises.length-1?"default":"pointer",color:i===dayExercises.length-1?"#ddd":"#888",fontSize:14}}>▼</button>
             </div>
-            
-            <input value={ex.name} onChange={e=>updExercise(ex.id,{name:e.target.value})} placeholder="שם התרגיל" style={{flex:1, width:"100%", padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:15,direction:"rtl",outline:"none",fontFamily:"inherit",fontWeight:600}}/>
+            <input value={ex.name} onChange={e=>updExercise(ex.id,{name:e.target.value})} placeholder="שם התרגיל" style={{flex:1, maxWidth: "400px", padding:"10px 14px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:15,direction:"rtl",outline:"none",fontFamily:"inherit",fontWeight:600}}/>
             <button onClick={()=>removeExercise(ex.id)} style={{background:"#ffebee",border:"none",borderRadius:8,cursor:"pointer",color:"#d32f2f",width:36,height:36}}>🗑</button>
           </div>
-          
           <div className="exercise-inputs" style={{display:"grid",gridTemplateColumns:"80px 80px 100px 100px 1fr",gap:16,paddingRight:40}}>
-            {[{label:"סטים",key:"sets",type:"number",min:1},{label:"חזרות",key:"reps",type:"number",min:1},{label:"מנוחה (שנ')",key:"rest",type:"number",min:0},{label:"משקל",key:"weight",type:"number",min:0}].map(f=><div key={f.key}>
+            {[{label:"סטים",key:"sets",type:"number",min:1},{label:"חזרות",key:"reps",type:"number",min:1},{label:"מנוחה (שנ')",key:"rest",type:"number",min:0},{label:"משקל (ק״ג)",key:"weight",type:"number",min:0}].map(f=><div key={f.key}>
               <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6,whiteSpace:"nowrap"}}>{f.label}</label>
               <input type={f.type} min={f.min} value={ex[f.key]||""} onChange={e=>updExercise(ex.id,{[f.key]:e.target.value===""?null:Number(e.target.value)})} style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,boxSizing:"border-box"}}/>
             </div>)}
             <div className="full-w">
               <label style={{fontSize:12,color:"#666",display:"block",marginBottom:6}}>הערות</label>
-              <input value={ex.note||""} onChange={e=>updExercise(ex.id,{note:e.target.value})} style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,boxSizing:"border-box"}} placeholder="דגשים לתרגיל..."/>
+              <input value={ex.note||""} onChange={e=>updExercise(ex.id,{note:e.target.value})} style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,boxSizing:"border-box"}} placeholder="דגשים..."/>
             </div>
           </div>
         </div>)}
@@ -328,6 +439,20 @@ function ProgramBuilder({program:initProg, programs, onSave, onCancel}){
         <div style={{fontSize:48}}>📋</div><div style={{fontSize:16, fontWeight:500}}>בחר יום מהרשימה</div>
       </div>}
     </div>
+
+    {/* חלון קופץ לבחירת תבנית לייבוא */}
+    <Modal open={importModalOpen} onClose={()=>setImportModalOpen(false)} title="בחר תבנית לייבוא">
+      <div style={{display:"flex",flexDirection:"column",gap:10, maxHeight:"400px", overflowY:"auto"}}>
+        {savedSets.map(s=>(
+          <div key={s.id} onClick={()=>importSavedSet(s.id)} style={{background:"#f8f9fa",padding:"16px",borderRadius:"12px",cursor:"pointer",border:"1px solid #e0e0e0",transition:"background 0.2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background="#e3f2fd"} onMouseLeave={e=>e.currentTarget.style.background="#f8f9fa"}>
+            <div style={{fontWeight:600,fontSize:16,color:"#1a1a2e"}}>{s.name}</div>
+            <div style={{fontSize:13,color:"#666",marginTop:4}}>{s.exercises.length} תרגילים בסט</div>
+          </div>
+        ))}
+        {!savedSets.length && <div style={{textAlign:"center",padding:"20px",color:"#888"}}>אין תבניות שמורות במערכת. צור תבנית באזור "תבניות וסטים" קודם.</div>}
+      </div>
+    </Modal>
   </div>;
 }
 
@@ -353,7 +478,7 @@ function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign}){
             <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:"#1565C0"}}>{p.days?.length||0}</div><div style={{fontSize:12,color:"#888"}}>ימים</div></div>
           </div>
           <div className="prog-actions" style={{display:"flex",alignItems:"center",gap:16}}>
-            <Btn sm onClick={(e)=>{e.stopPropagation(); setAssignModalProg(p);}} style={{background:"#e3f2fd",color:"#1565C0"}}>🔗 שיוך למתאמנים</Btn>
+            <Btn sm onClick={(e)=>{e.stopPropagation(); setAssignModalProg(p);}} style={{background:"#e3f2fd",color:"#1565C0"}}>🔗 שיוך</Btn>
             <button onClick={(e)=>{e.stopPropagation(); onDelete(p.id);}} style={{background:"#fff0f0",color:"#d32f2f",border:"none",borderRadius:8,width:40,height:40,fontSize:18,cursor:"pointer"}}>🗑</button>
           </div>
         </div>
@@ -427,18 +552,20 @@ export default function App(){
   const [modal,setModal]=useState(null);
   const [editTarget,setEditTarget]=useState(null);
   const [programBuilderTarget,setProgramBuilderTarget]=useState(null);
+  const [savedSetBuilderTarget, setSavedSetBuilderTarget]=useState(null);
 
   useEffect(()=>{ 
     async function initApp() {
       try {
-        const [progRes, trainRes, sessRes] = await Promise.all([
-          fetch(`${API_URL}/programs`), fetch(`${API_URL}/trainers`), fetch(`${API_URL}/sessions`)
+        const [progRes, trainRes, sessRes, setsRes] = await Promise.all([
+          fetch(`${API_URL}/programs`), fetch(`${API_URL}/trainers`), fetch(`${API_URL}/sessions`), fetch(`${API_URL}/saved_sets`)
         ]);
-        if(progRes.ok && trainRes.ok && sessRes.ok){
+        if(progRes.ok && trainRes.ok && sessRes.ok && setsRes.ok){
           const programs = await progRes.json();
           const trainers = await trainRes.json();
           const sessions = await sessRes.json();
-          setDb({ programs, trainers, sessions });
+          const savedSets = await setsRes.json();
+          setDb({ programs, trainers, sessions, savedSets });
         }
       } catch (error) {
         console.warn("Backend down. Loading local fallback.");
@@ -468,29 +595,43 @@ export default function App(){
       updateDb(prev => ({...prev, trainers: [...prev.trainers, { ...form, id: newT._id || newT.id }]}));
     } catch(e) { updateDb(prev => ({...prev, trainers: [...prev.trainers, { ...form, id: uid() }]})); }
   };
+ const editTrainer = async form => {
+    // 1. הגנה: אם אין ID, תפסיק מיד
+    if (!form.id || form.id === "undefined") {
+        console.error("Edit failed: No valid ID", form);
+        return;
+    }
 
-  const editTrainer = async form => {
-    try { await fetch(`${API_URL}/trainers/${form.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); } catch(e) {}
-    updateDb(prev => ({...prev, trainers: prev.trainers.map(t => t.id === form.id ? { ...t, ...form } : t)}));
+    try { 
+        // 2. בצע את העדכון לשרת
+        await fetch(`${API_URL}/trainers/${form.id}`, { 
+            method: "PUT", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify(form) 
+        }); 
+    } catch(e) {
+        console.error("API update failed", e);
+    }
+    
+    // 3. עדכן את ה-State המקומי
+    updateDb(prev => ({
+        ...prev, 
+        trainers: prev.trainers.map(t => t.id === form.id ? { ...t, ...form } : t)
+    }));
   };
-
   const deleteTrainer = async id => {
-    if(!window.confirm("למחוק מתאמן? (פעולה זו תמחק גם את ההיסטוריה שלו)")) return;
+    if(!window.confirm("למחוק מתאמן?")) return;
     try { await fetch(`${API_URL}/trainers/${id}`, { method: "DELETE" }); } catch(e) {}
     updateDb(prev => ({...prev, trainers: prev.trainers.filter(t => t.id !== id), sessions: prev.sessions.filter(s => s.trainerId !== id)}));
   };
 
   const saveProgram = async prog => {
-    setSaving(true);
-    let finalProg = prog;
+    setSaving(true); let finalProg = prog;
     try {
       const method = (prog.id && typeof prog.id === 'string') ? "PUT" : "POST";
       const url = method === "PUT" ? `${API_URL}/programs/${prog.id}` : `${API_URL}/programs`;
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(prog) });
-      if(res.ok) {
-        const data = await res.json();
-        finalProg = { ...prog, id: data._id || data.id };
-      }
+      if(res.ok) { const data = await res.json(); finalProg = { ...prog, id: data._id || data.id }; }
     } catch(e) {}
     updateDb(prev => {
       const idx = prev.programs.findIndex(p => p.id === finalProg.id);
@@ -498,14 +639,50 @@ export default function App(){
       if (idx !== -1) newProgs[idx] = finalProg; else newProgs.push({...finalProg, id: finalProg.id || uid()});
       return { ...prev, programs: newProgs };
     });
-    setProgramBuilderTarget(null);
-    setSaving(false);
+    setProgramBuilderTarget(null); setSaving(false);
+  };
+  const deleteProgram = async id => {
+    // הגנה: אם ה-ID הוא undefined, אל תבצע מחיקה בשרת
+    if (id === "undefined" || !id) {
+        console.error("Cannot delete: Invalid ID");
+        return;
+    }
+
+    if(!window.confirm("למחוק תוכנית אימון?")) return;
+    
+    try { 
+        await fetch(`${API_URL}/programs/${id}`, { method: "DELETE" }); 
+    } catch(e) { 
+        console.warn("API delete failed", e); 
+    }
+    
+    updateDb(prev => ({
+      ...prev, 
+      programs: prev.programs.filter(p => p.id !== id), 
+      trainers: prev.trainers.map(t => t.programId === id ? { ...t, programId: null } : t)
+    }));
   };
 
-  const deleteProgram = async id => {
-    if(!window.confirm("למחוק תוכנית אימון?")) return;
-    try { await fetch(`${API_URL}/programs/${id}`, { method: "DELETE" }); } catch(e) {}
-    updateDb(prev => ({...prev, programs: prev.programs.filter(p => p.id !== id), trainers: prev.trainers.map(t => t.programId === id ? { ...t, programId: null } : t)}));
+  const saveSavedSet = async setObj => {
+    setSaving(true); let finalSet = setObj;
+    try {
+      const method = (setObj.id && typeof setObj.id === 'string') ? "PUT" : "POST";
+      const url = method === "PUT" ? `${API_URL}/saved_sets/${setObj.id}` : `${API_URL}/saved_sets`;
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(setObj) });
+      if(res.ok) { const data = await res.json(); finalSet = { ...setObj, id: data._id || data.id }; }
+    } catch(e) {}
+    updateDb(prev => {
+      const idx = prev.savedSets.findIndex(s => s.id === finalSet.id);
+      let newSets = [...prev.savedSets];
+      if (idx !== -1) newSets[idx] = finalSet; else newSets.push({...finalSet, id: finalSet.id || uid()});
+      return { ...prev, savedSets: newSets };
+    });
+    setSavedSetBuilderTarget(null); setSaving(false);
+  };
+  const deleteSavedSet = async id => {
+    if(!window.confirm("למחוק תבנית זו?")) return;
+    try { await fetch(`${API_URL}/saved_sets/${id}`, { method: "DELETE" }); } catch(e) {}
+    updateDb(prev => ({...prev, savedSets: prev.savedSets.filter(s => s.id !== id)}));
   };
 
   const assignProgram = async (tid, pid) => {
@@ -513,7 +690,7 @@ export default function App(){
     updateDb(prev => ({...prev, trainers: prev.trainers.map(t => t.id === tid ? { ...t, programId: pid } : t)}));
   };
 
-  const navTo=p=>{ setPage(p); setProgramBuilderTarget(null); };
+  const navTo=p=>{ setPage(p); setProgramBuilderTarget(null); setSavedSetBuilderTarget(null); };
 
   return <>
     <style dangerouslySetInnerHTML={{ __html: globalCss }} />
@@ -521,13 +698,16 @@ export default function App(){
       <Sidebar page={page} setPage={navTo}/>
       {saving&&<div style={{position:"fixed",bottom:20,left:20,background:"#1565C0",color:"#fff",padding:"8px 16px",borderRadius:8,zIndex:9999}}>שומר בשרת...</div>}
 
-      {programBuilderTarget!==null
-        ? <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
-        : <>
-            {page==="dashboard"&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")}/>}
-            {page==="trainers"&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}}/>}
-            {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} onDelete={deleteProgram} onAssign={assignProgram}/>}
-          </>
+      {programBuilderTarget!==null ? 
+        <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} savedSets={db.savedSets} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
+      : savedSetBuilderTarget!==null ?
+        <SavedSetBuilder setObj={savedSetBuilderTarget==="new"?null:savedSetBuilderTarget} onSave={saveSavedSet} onCancel={()=>setSavedSetBuilderTarget(null)}/>
+      : <>
+          {page==="dashboard"&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")}/>}
+          {page==="trainers"&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}}/>}
+          {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} onDelete={deleteProgram} onAssign={assignProgram}/>}
+          {page==="savedSets"&&<SavedSetsPage db={db} onAdd={()=>setSavedSetBuilderTarget("new")} onEdit={s=>setSavedSetBuilderTarget(s)} onDelete={deleteSavedSet}/>}
+        </>
       }
 
       <TrainerModal open={modal==="add-trainer"} onClose={()=>setModal(null)} onSave={addTrainer} programs={db.programs}/>
