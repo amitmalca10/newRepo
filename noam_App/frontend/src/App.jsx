@@ -107,7 +107,7 @@ function Sidebar({page,setPage}){
   return <div className="sidebar" style={{width:200,flexShrink:0,background:"#1565C0",display:"flex",flexDirection:"column",paddingTop:28}}>
     <div className="sidebar-header" style={{textAlign:"center",marginBottom:32,paddingBottom:20,borderBottom:"1px solid rgba(255,255,255,.15)"}}>
       <div style={{fontSize:28,marginBottom:4}}>🏋️</div>
-      <div style={{color:"#fff",fontWeight:700,fontSize:18}}>לא נשית איי</div>
+      <div style={{color:"#fff",fontWeight:700,fontSize:18}}>FitCoach</div>
     </div>
     {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 20px",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"4px solid #fff":"4px solid transparent",fontWeight:page===n.id?600:400,fontSize:14,transition:"all .15s"}}>
       <span>{n.icon}</span><span>{n.label}</span>
@@ -138,10 +138,8 @@ function Dashboard({db,onAddTrainer}){
 }
 
 // ─── Trainers Page ─────────────────────────────────────────────────────────────
-// ─── Trainers Page ─────────────────────────────────────────────────────────────
 function TrainersPage({db,onAdd,onDelete,onEdit}){
   const {trainers,sessions,programs}=db;
-  
   return <div className="main-pad" style={{padding:"28px 32px",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
       <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>מתאמנים</div>
@@ -149,40 +147,22 @@ function TrainersPage({db,onAdd,onDelete,onEdit}){
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:16}}>
       {trainers.map(t=>{
-        // כאן הלוגיקה שמחברת בין המתאמן לתוכנית שלו
-        const prog = t.programId ? programs.find(p => p.id === t.programId) : null;
-        const wc = getWeekCount(sessions,t.id);
-        const freq = prog?.sessionsPerWeek || 0;
-        const pct = freq ? Math.min(Math.round(wc/freq*100),100) : 0;
-        
+        const prog=t.programId?programs.find(p=>p.id===t.programId):null;
+        const wc=getWeekCount(sessions,t.id);
+        const freq=prog?.sessionsPerWeek||0;
+        const pct=freq?Math.min(Math.round(wc/freq*100),100):0;
         return <div key={t.id} style={{background:"#fff",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(33,150,243,.08)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-            <Avatar trainer={t} size={44}/>
-            <div>
-              <div style={{fontWeight:600,fontSize:15,color:"#1a1a2e"}}>{t.fname} {t.lname}</div>
-              <div style={{fontSize:12,color:"#888",marginTop:2}}>{t.phone}</div>
-            </div>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}><Avatar trainer={t} size={44}/>
+            <div><div style={{fontWeight:600,fontSize:15,color:"#1a1a2e"}}>{t.fname} {t.lname}</div><div style={{fontSize:12,color:"#888",marginTop:2}}>{t.phone}</div></div>
           </div>
-          
           <div style={{fontSize:12,color:"#666",marginBottom:4}}>🎯 {t.goal||"לא הוגדר"}</div>
-          
-          {/* כאן מוצג שם התוכנית המשויכת */}
-          <div style={{fontSize:12,color:"#1565C0",marginBottom:12,fontWeight:600}}>
-            📋 {prog ? `${prog.name}` : "❌ ללא תוכנית אימון"}
-          </div>
-
-          {freq > 0 && (
-            <>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
-                <span style={{color:"#888"}}>אימונים השבוע</span>
-                <span style={{fontWeight:600,color:"#1565C0"}}>{wc}/{freq}</span>
-              </div>
-              <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden",marginBottom:12}}>
-                <div style={{width:pct+"%",height:"100%",borderRadius:4,background:pct>=100?"#4CAF50":pct>=60?"#2196F3":"#FF9800"}}/>
-              </div>
-            </>
-          )}
-          
+          <div style={{fontSize:12,color:"#666",marginBottom:12}}>📋 {prog?`${prog.name} (${freq}× בשבוע)`:"ללא תוכנית"}</div>
+          {freq>0&&<>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{color:"#888"}}>אימונים השבוע</span><span style={{fontWeight:600,color:"#1565C0"}}>{wc}/{freq}</span></div>
+            <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden",marginBottom:12}}>
+              <div style={{width:pct+"%",height:"100%",borderRadius:4,background:pct>=100?"#4CAF50":pct>=60?"#2196F3":"#FF9800"}}/>
+            </div>
+          </>}
           <div style={{display:"flex",gap:6}}>
             <Btn sm full onClick={()=>onEdit(t)}>✏️ עריכה</Btn>
             <Btn sm full danger onClick={()=>onDelete(t.id)}>🗑️ מחיקה</Btn>
@@ -193,6 +173,7 @@ function TrainersPage({db,onAdd,onDelete,onEdit}){
     </div>
   </div>;
 }
+
 // ─── Saved Sets Page & Builder ────────────────────────────────────────────────
 function SavedSetsPage({db,onAdd,onEdit,onDelete}){
   const {savedSets}=db;
@@ -364,9 +345,9 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
         <Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור</Btn>
       </div>
     </div>
-{/* כאן בוצע השינוי: gridTemplateColumns מחולק ל-4 עמודות שוות */}
-    <div style={{background:"#fff",borderRadius:16,padding:"24px",marginBottom:24,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
-      <div style={{display:"grid",gridTemplateColumns:"1.5fr 2fr 1fr 1fr",gap:16}}>
+
+   <div style={{background:"#fff",borderRadius:16,padding:"24px",marginBottom:24,boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
+      <div className="mob-stack" style={{display:"grid",gridTemplateColumns:"1.5fr 2fr 1fr 1fr",gap:16}}>
         <div>
           <label style={{fontSize:12,color:"#555",display:"block",marginBottom:6,fontWeight:500}}>שם התוכנית</label>
           <input style={{...inputStyle, borderColor: isDuplicateName ? "#d32f2f" : "#e0e0e0"}} value={prog.name} onChange={e=>upd({name:e.target.value})} placeholder="לדוגמה: פול בודי חיזוק"/>
@@ -387,6 +368,7 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
         </div>
       </div>
     </div>
+
     <div className="builder-grid" style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:24,alignItems:"start"}}>
       <div style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 4px 16px rgba(33,150,243,.06)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -507,28 +489,52 @@ function TrainerModal({open,onClose,onSave,initial,programs}){
   useEffect(()=>{ if(open) setForm(initial ? {...initial} : blank); },[open, initial]);
 
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
-  const isFnameValid = form.fname?.trim().length > 0;
-  const isLnameValid = form.lname?.trim().length > 0;
-  const isPasswordValid = form.password && form.password.trim().length > 0;
-  const isPhoneValid = /^0\d{1,2}-?\d{7}$/.test(form.phone?.trim() || "");
-  const valid = isFnameValid && isLnameValid && isPasswordValid && isPhoneValid;
+  
+  // ─── חוקי ולידציה (Regex) ───
+  const hebrewRegex = /^[\u0590-\u05EA\s]+$/; // אותיות בעברית ורווחים בלבד
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // פורמט אימייל סטנדרטי
+  const phoneRegex = /^\d{10}$/; // בדיוק 10 ספרות (ללא מקפים או אותיות)
+
+  // ─── בדיקות תקינות לכל שדה ───
+  const isFnameValid = form.fname?.trim().length > 0 && hebrewRegex.test(form.fname.trim());
+  const isLnameValid = form.lname?.trim().length > 0 && hebrewRegex.test(form.lname.trim());
+  const isEmailValid = form.email?.trim().length > 0 && emailRegex.test(form.email.trim());
+  const isPasswordValid = form.password && form.password.length >= 8;
+  const isPhoneValid = form.phone?.trim().length > 0 && phoneRegex.test(form.phone.trim());
+
+  const valid = isFnameValid && isLnameValid && isEmailValid && isPasswordValid && isPhoneValid;
+
+  // ─── יצירת הודעת שגיאה מותאמת אישית ───
+  let errorMsg = "";
+  if (!form.fname?.trim() || !form.lname?.trim()) {
+    errorMsg = "יש למלא שם פרטי ושם משפחה (שדות חובה)";
+  } else if (!hebrewRegex.test(form.fname.trim()) || !hebrewRegex.test(form.lname.trim())) {
+    errorMsg = "שם פרטי ושם משפחה חייבים להכיל אותיות בעברית בלבד";
+  } else if (!form.email?.trim() || !emailRegex.test(form.email.trim())) {
+    errorMsg = "יש להזין כתובת אימייל תקינה (שדה חובה)";
+  } else if (!form.password || form.password.length < 8) {
+    errorMsg = "הסיסמה חייבת להכיל לפחות 8 תווים (שדה חובה)";
+  } else if (!form.phone?.trim() || !phoneRegex.test(form.phone.trim())) {
+    errorMsg = "מספר הטלפון חייב להכיל בדיוק 10 ספרות, ללא מקפים (לדוגמה: 0501234567)";
+  }
+
   const currentProgramName = form.programId ? programs.find(p=>p.id===form.programId)?.name : null;
 
   return <Modal open={open} onClose={onClose} title={initial?"עריכת מתאמן":"הוספת מתאמן חדש"}>
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-      <Inp label="שם פרטי *" value={form.fname} onChange={e=>set("fname",e.target.value)}/>
-      <Inp label="שם משפחה *" value={form.lname} onChange={e=>set("lname",e.target.value)}/>
+      <Inp label="שם פרטי *" value={form.fname} onChange={e=>set("fname",e.target.value)} placeholder="אותיות בעברית בלבד"/>
+      <Inp label="שם משפחה *" value={form.lname} onChange={e=>set("lname",e.target.value)} placeholder="אותיות בעברית בלבד"/>
     </div>
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-      <Inp label="אימייל" type="email" value={form.email||""} onChange={e=>set("email",e.target.value)}/>
-      <Inp label="סיסמה *" type="password" value={form.password||""} onChange={e=>set("password",e.target.value)}/>
+      <Inp label="אימייל *" type="email" value={form.email||""} onChange={e=>set("email",e.target.value)} placeholder="email@example.com"/>
+      <Inp label="סיסמה *" type="password" value={form.password||""} onChange={e=>set("password",e.target.value)} placeholder="לפחות 8 תווים"/>
     </div>
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-      <Inp label="טלפון *" value={form.phone||""} onChange={e=>set("phone",e.target.value)}/>
-      <Inp label="משקל - ק״ג" type="number" value={form.weight||""} onChange={e=>set("weight",e.target.value)}/>
+      <Inp label="טלפון *" value={form.phone||""} onChange={e=>set("phone",e.target.value)} placeholder="10 ספרות (לדוגמה 0501234567)"/>
+      <Inp label="משקל - ק״ג" type="number" value={form.weight||""} onChange={e=>set("weight",e.target.value)} placeholder="אופציונלי"/>
     </div>
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-      <Inp label="מטרת אימון" value={form.goal||""} onChange={e=>set("goal",e.target.value)}/>
+      <Inp label="מטרת אימון" value={form.goal||""} onChange={e=>set("goal",e.target.value)} placeholder="אופציונלי"/>
       <div>
         <label style={{fontSize:12,color:"#666",display:"block",marginBottom:4,fontWeight:500}}>תוכנית אימון משויכת</label>
         <div style={{width:"100%",padding:"8px 12px",border:"1.5px solid #e0e0e0",borderRadius:8,fontSize:14,direction:"rtl",background:"#f5f5f5",color:currentProgramName?"#1565C0":"#888",fontWeight:currentProgramName?600:400,fontFamily:"inherit"}}>
@@ -536,13 +542,22 @@ function TrainerModal({open,onClose,onSave,initial,programs}){
         </div>
       </div>
     </div>
+
+    {/* תצוגת שגיאת הולידציה מעל הכפתורים */}
+    {!valid && errorMsg && (
+      <div style={{color:"#d32f2f",fontSize:13,fontWeight:600,marginTop:12,textAlign:"center",background:"#ffebee",padding:"8px",borderRadius:"6px"}}>
+        {errorMsg}
+      </div>
+    )}
+
     <div style={{display:"flex",gap:8,marginTop:16}}>
-      <Btn primary disabled={!valid} full onClick={()=>{ onSave({...form, goal: form.goal?.trim()}); onClose(); }}>{initial?"שמור":"הוסף מתאמן"}</Btn>
+      <Btn primary disabled={!valid} full onClick={()=>{ onSave({...form, goal: form.goal?.trim()}); onClose(); }}>{initial?"שמור שינויים":"הוסף מתאמן"}</Btn>
       <Btn full onClick={onClose}>ביטול</Btn>
     </div>
   </Modal>;
 }
 
+// ─── Main App ─────────────────────────────────────────────────────────────────
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App(){
   const [db,setDb]=useState(null);
@@ -565,7 +580,16 @@ export default function App(){
           const trainers = await trainRes.json();
           const sessions = await sessRes.json();
           const savedSets = await setsRes.json();
-          setDb({ programs, trainers, sessions, savedSets });
+          
+          // התיקון המרכזי: פונקציה שמוודאת שלכל אובייקט שמגיע מהשרת יש שדה id תקין
+          const normalize = arr => arr.map(obj => ({ ...obj, id: obj._id || obj.id }));
+          
+          setDb({ 
+            programs: normalize(programs), 
+            trainers: normalize(trainers), 
+            sessions: normalize(sessions), 
+            savedSets: normalize(savedSets) 
+          });
         }
       } catch (error) {
         console.warn("Backend down. Loading local fallback.");
@@ -595,31 +619,15 @@ export default function App(){
       updateDb(prev => ({...prev, trainers: [...prev.trainers, { ...form, id: newT._id || newT.id }]}));
     } catch(e) { updateDb(prev => ({...prev, trainers: [...prev.trainers, { ...form, id: uid() }]})); }
   };
- const editTrainer = async form => {
-    // 1. הגנה: אם אין ID, תפסיק מיד
-    if (!form.id || form.id === "undefined") {
-        console.error("Edit failed: No valid ID", form);
-        return;
-    }
-
-    try { 
-        // 2. בצע את העדכון לשרת
-        await fetch(`${API_URL}/trainers/${form.id}`, { 
-            method: "PUT", 
-            headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify(form) 
-        }); 
-    } catch(e) {
-        console.error("API update failed", e);
-    }
-    
-    // 3. עדכן את ה-State המקומי
-    updateDb(prev => ({
-        ...prev, 
-        trainers: prev.trainers.map(t => t.id === form.id ? { ...t, ...form } : t)
-    }));
+  
+  const editTrainer = async form => {
+    if (!form.id) return;
+    try { await fetch(`${API_URL}/trainers/${form.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); } catch(e) {}
+    updateDb(prev => ({...prev, trainers: prev.trainers.map(t => t.id === form.id ? { ...t, ...form } : t)}));
   };
+
   const deleteTrainer = async id => {
+    if (!id) return;
     if(!window.confirm("למחוק מתאמן?")) return;
     try { await fetch(`${API_URL}/trainers/${id}`, { method: "DELETE" }); } catch(e) {}
     updateDb(prev => ({...prev, trainers: prev.trainers.filter(t => t.id !== id), sessions: prev.sessions.filter(s => s.trainerId !== id)}));
@@ -641,26 +649,12 @@ export default function App(){
     });
     setProgramBuilderTarget(null); setSaving(false);
   };
-  const deleteProgram = async id => {
-    // הגנה: אם ה-ID הוא undefined, אל תבצע מחיקה בשרת
-    if (id === "undefined" || !id) {
-        console.error("Cannot delete: Invalid ID");
-        return;
-    }
 
+  const deleteProgram = async id => {
+    if (!id) return;
     if(!window.confirm("למחוק תוכנית אימון?")) return;
-    
-    try { 
-        await fetch(`${API_URL}/programs/${id}`, { method: "DELETE" }); 
-    } catch(e) { 
-        console.warn("API delete failed", e); 
-    }
-    
-    updateDb(prev => ({
-      ...prev, 
-      programs: prev.programs.filter(p => p.id !== id), 
-      trainers: prev.trainers.map(t => t.programId === id ? { ...t, programId: null } : t)
-    }));
+    try { await fetch(`${API_URL}/programs/${id}`, { method: "DELETE" }); } catch(e) {}
+    updateDb(prev => ({...prev, programs: prev.programs.filter(p => p.id !== id), trainers: prev.trainers.map(t => t.programId === id ? { ...t, programId: null } : t)}));
   };
 
   const saveSavedSet = async setObj => {
@@ -679,13 +673,16 @@ export default function App(){
     });
     setSavedSetBuilderTarget(null); setSaving(false);
   };
+
   const deleteSavedSet = async id => {
+    if (!id) return;
     if(!window.confirm("למחוק תבנית זו?")) return;
     try { await fetch(`${API_URL}/saved_sets/${id}`, { method: "DELETE" }); } catch(e) {}
     updateDb(prev => ({...prev, savedSets: prev.savedSets.filter(s => s.id !== id)}));
   };
 
   const assignProgram = async (tid, pid) => {
+    if (!tid) return;
     try { await fetch(`${API_URL}/trainers/${tid}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ programId: pid }) }); } catch(e) {}
     updateDb(prev => ({...prev, trainers: prev.trainers.map(t => t.id === tid ? { ...t, programId: pid } : t)}));
   };
@@ -696,7 +693,7 @@ export default function App(){
     <style dangerouslySetInnerHTML={{ __html: globalCss }} />
     <div className="app-layout" style={{display:"flex",height:"100vh",direction:"rtl",fontFamily:"sans-serif"}}>
       <Sidebar page={page} setPage={navTo}/>
-      {saving&&<div style={{position:"fixed",bottom:20,left:20,background:"#1565C0",color:"#fff",padding:"8px 16px",borderRadius:8,zIndex:9999}}>שומר בשרת...</div>}
+      {saving&&<div style={{position:"fixed",bottom:20,left:20,background:"#1565C0",color:"#fff",padding:"8px 16px",borderRadius:8,zIndex:9999}}>שומר...</div>}
 
       {programBuilderTarget!==null ? 
         <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} savedSets={db.savedSets} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
