@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 // ─── API Configuration ────────────────────────────────────────────────────────
-const API_URL = import.meta.env?.VITE_API_URL || "http://localhost:8000";
+const API_URL = import.meta.env?.VITE_API_URL || "https://newrepo-3b2u.onrender.com";
 const DB_KEY = "noamtrains_data_v4";
 
 async function loadLocalDB() {
