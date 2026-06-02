@@ -1,10 +1,12 @@
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Body
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
+
 
 app = FastAPI(title="FitCoach API")
 
@@ -15,8 +17,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+load_dotenv()
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://amitmalca10_db_user:Am20012002@cluster0.yr6rbg3.mongodb.net/")
+MONGO_URL = os.getenv("MONGO_URL")
 client = AsyncIOMotorClient(MONGO_URL)
 db = client.noamtrains
 
