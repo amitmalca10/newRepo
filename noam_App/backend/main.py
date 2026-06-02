@@ -127,6 +127,10 @@ async def startup_event():
         await trainers_collection.insert_one(admin_user)
         print("✅ Admin user automatically created in DB.")
 
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
 # --- LOGIN ROUTE ---
 @app.post("/login")
 async def login(req: LoginRequest):
