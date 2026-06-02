@@ -22,9 +22,9 @@ db = client.noamtrains
 
 # Collections
 programs_collection = db.get_collection("programs")
-trainers_collection = db.get_collection("trainers")
+trainers_collection = db.get_collection("trainers") # אוסף שמשמש כעת לכולם (מנהל ומתאמנים)
 sessions_collection = db.get_collection("sessions")
-saved_sets_collection = db.get_collection("saved_sets") # אוסף חדש לסטים השמורים
+saved_sets_collection = db.get_collection("saved_sets")
 
 # Custom ObjectId validation for Pydantic
 class PyObjectId(ObjectId):
@@ -41,6 +41,10 @@ class PyObjectId(ObjectId):
         field_schema.update(type="string")
 
 # --- Models ---
+class LoginRequest(BaseModel):
+    identifier: str
+    password: str
+
 class Exercise(BaseModel):
     id: int
     name: str        
@@ -86,6 +90,7 @@ class TrainerModel(BaseModel):
     weight: Optional[str] = ""
     goal: Optional[str] = ""
     programId: Optional[str] = None
+    role: Optional[str] = "user" # הוספת תפקיד (admin או user)
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -101,6 +106,49 @@ class SessionModel(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
+# --- STARTUP EVENT ---
+@app.on_event("startup")
+async def startup_event():
+    # בודק אם כבר קיים אדמין במסד הנתונים
+    admin = await trainers_collection.find_one({"role": "admin"})
+    if not admin:
+        # יצירת מנהל המערכת אוטומטית אם לא קיים
+        admin_user = {
+            "fname": "admin",
+            "lname": "admin",
+            "email": "admin@admin.com",
+            "phone": "0501111111",
+            "password": "Aa123456",
+            "role": "admin"
+        }
+        await trainers_collection.insert_one(admin_user)
+        print("✅ Admin user automatically created in DB.")
+
+# --- LOGIN ROUTE ---
+@app.post("/login")
+async def login(req: LoginRequest):
+    # חיפוש משתמש לפי אימייל, טלפון או שם משתמש
+    user = await trainers_collection.find_one({
+        "$or": [
+            {"fname": req.identifier},
+            {"email": req.identifier},
+            {"phone": req.identifier}
+        ]
+    })
+    
+    if user and user.get("password") == req.password:
+        role = user.get("role", "user")
+        token = f"secure_token_{str(user['_id'])}" # ייצור טוקן פשוט להדגמה
+        return {
+            "success": True, 
+            "token": token, 
+            "role": role, 
+            "name": user.get("fname"),
+            "userId": str(user["_id"])
+        }
+    
+    raise HTTPException(status_code=401, detail="שם משתמש או סיסמה שגויים")
+
 # --- SAVED SETS ROUTES ---
 @app.get("/saved_sets", response_model=List[SavedSetModel])
 async def get_saved_sets():
@@ -113,12 +161,14 @@ async def create_saved_set(saved_set: SavedSetModel):
 
 @app.put("/saved_sets/{id}", response_model=SavedSetModel)
 async def update_saved_set(id: str, saved_set: SavedSetModel):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     update_data = saved_set.dict(by_alias=True, exclude={"id"}, exclude_unset=True)
     await saved_sets_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
     return await saved_sets_collection.find_one({"_id": ObjectId(id)})
 
 @app.delete("/saved_sets/{id}")
 async def delete_saved_set(id: str):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     await saved_sets_collection.delete_one({"_id": ObjectId(id)})
     return {"status": "deleted"}
 
@@ -134,12 +184,14 @@ async def create_program(program: ProgramModel):
 
 @app.put("/programs/{id}", response_model=ProgramModel)
 async def update_program(id: str, program: ProgramModel):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     update_data = program.dict(by_alias=True, exclude={"id"}, exclude_unset=True)
     await programs_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
     return await programs_collection.find_one({"_id": ObjectId(id)})
 
 @app.delete("/programs/{id}")
 async def delete_program(id: str):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     await programs_collection.delete_one({"_id": ObjectId(id)})
     await trainers_collection.update_many({"programId": id}, {"$set": {"programId": None}})
     return {"status": "deleted"}
@@ -147,15 +199,18 @@ async def delete_program(id: str):
 # --- TRAINERS ROUTES ---
 @app.get("/trainers", response_model=List[TrainerModel])
 async def get_trainers():
-    return await trainers_collection.find().to_list(100)
+    # מחזיר רק מתאמנים רגילים, ללא האדמין
+    return await trainers_collection.find({"role": {"$ne": "admin"}}).to_list(100)
 
 @app.post("/trainers", response_model=TrainerModel)
 async def create_trainer(trainer: TrainerModel):
+    # כברירת מחדל מי שנוצר הוא user
     new_trainer = await trainers_collection.insert_one(trainer.dict(by_alias=True, exclude={"id"}))
     return await trainers_collection.find_one({"_id": new_trainer.inserted_id})
 
 @app.put("/trainers/{id}")
 async def update_trainer(id: str, data: dict = Body(...)):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     data.pop("_id", None)
     data.pop("id", None)
     await trainers_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
@@ -163,6 +218,7 @@ async def update_trainer(id: str, data: dict = Body(...)):
 
 @app.delete("/trainers/{id}")
 async def delete_trainer(id: str):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     await trainers_collection.delete_one({"_id": ObjectId(id)})
     await sessions_collection.delete_many({"trainerId": id})
     return {"status": "deleted"}
