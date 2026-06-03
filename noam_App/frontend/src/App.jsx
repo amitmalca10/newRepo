@@ -261,7 +261,7 @@ function LoginPage({ onLogin }) {
         
         <form onSubmit={submit} style={{display:"flex", flexDirection:"column", gap:"2.5vh"}}>
           <div style={{textAlign:"right"}}>
-            <label style={{fontSize:"1.6vh", color:"#555", fontWeight:600, display:"block", marginBottom:"1vh"}}>שם משתמש / טלפון / אימייל</label>
+            <label style={{fontSize:"1.6vh", color:"#555", fontWeight:600, display:"block", marginBottom:"1vh"}}>מספר פלאפון / דוא"ל</label>
             <input required value={identifier} onChange={e=>setIdentifier(e.target.value)} style={{width:"100%", padding:"1.8vh 2vw", border:"1.5px solid #e0e0e0", borderRadius:"1.5vh", outline:"none", fontSize:"1.8vh", fontFamily:"inherit", boxSizing:"border-box", transition:"0.2s"}} onFocus={e=>e.target.style.borderColor="#1565C0"} onBlur={e=>e.target.style.borderColor="#e0e0e0"} placeholder="הזן פרטי זיהוי" />
           </div>
           <div style={{textAlign:"right"}}>
