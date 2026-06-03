@@ -108,10 +108,10 @@ const globalCss = `
 
     /* סידור ההדר העליון בפלאפון */
     .page-header {
-      position: relative;
+      position: relative !important;
       justify-content: center !important;
       align-items: center !important;
-      min-height: 5vh;
+      min-height: 5vh !important;
       margin-bottom: 2.5vh !important;
       display: flex !important;
     }
@@ -314,7 +314,7 @@ function Dashboard({db,onAddTrainer,onLogout}){
   const totalWeek=sessions.filter(s=>{const{sun,sat}=getWeekRange();return s.date>=sun&&s.date<=sat;}).length;
   const avgPer=trainers.length?(totalWeek/trainers.length).toFixed(1):0;
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="page-header">
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
       <div className="page-title-container">
         <div className="page-title" style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>שלום מנהל! 👋</div>
@@ -337,7 +337,7 @@ function Dashboard({db,onAddTrainer,onLogout}){
 function TrainersPage({db,onAdd,onDelete,onEdit,onLogout}){
   const {trainers,sessions,programs}=db;
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="page-header">
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
       <div className="page-title-container">
         <div className="page-title" style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>מתאמנים</div>
@@ -376,7 +376,7 @@ function TrainersPage({db,onAdd,onDelete,onEdit,onLogout}){
 function SavedSetsPage({db,onAdd,onEdit,onDelete,onLogout}){
   const {savedSets}=db;
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="page-header">
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
       <div className="page-title-container">
         <div className="page-title" style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תבניות וסטים שמורים</div>
@@ -414,7 +414,6 @@ function SavedSetBuilder({setObj:initSet, savedSets, onSave, onCancel, onLogout}
   const updExercise = (id,patch) => updExercises(prog.exercises.map(e=>e.id===id?{...e,...patch}:e));
   const moveEx = (idx,dir) => { const exs=[...prog.exercises]; const to=idx+dir; if(to<0||to>=exs.length) return; [exs[idx],exs[to]]=[exs[to],exs[idx]]; updExercises(exs); };
 
-  // בדיקת כפילות שם (רק אם זה לא אותו ID שאנחנו עורכים עכשיו)
   const isDuplicateName = savedSets.some(s => s.name.trim() === prog.name.trim() && s.id !== prog.id);
   const valid = prog.name.trim() && prog.exercises.length > 0 && prog.exercises.every(e => e.name.trim()) && !isDuplicateName;
 
@@ -425,7 +424,7 @@ function SavedSetBuilder({setObj:initSet, savedSets, onSave, onCancel, onLogout}
   else if (!prog.exercises.every(e => e.name.trim())) errorMsg = "לכל התרגילים חייב להיות שם";
 
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="page-header">
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
       <div className="page-title-container">
         <div className="page-title" style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תבנית חדשה":"✏️ עריכת תבנית"}</div>
@@ -486,7 +485,7 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
   const addExercise=()=>updExercises([...dayExercises,{id:Date.now(),name:"",sets:3,reps:10,rest:60,weight:"",note:""}]);
   
   const importSavedSet = (setId) => {
-    if (prog.importedSetIds?.includes(setId)) return; // מניעת ייבוא כפול
+    if (prog.importedSetIds?.includes(setId)) return; 
     const setToImport = savedSets.find(s => s.id === setId);
     if(!setToImport) return;
     const importedExercises = setToImport.exercises.map(ex => ({ ...ex, id: Date.now() + Math.floor(Math.random() * 10000), weight: "" }));
@@ -516,7 +515,7 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
   const inputStyle={width:"100%",padding:"1.5vh 1.5vw",border:"1.5px solid #e0e0e0",borderRadius:"1vh",fontSize:"1.6vh",direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
 
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="page-header">
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
       <div className="page-title-container">
         <div className="page-title" style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תוכנית חדשה":"✏️ עריכת תוכנית"}</div>
@@ -581,7 +580,7 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
         {savedSets.map(s=>{
           const alreadyImported = prog.importedSetIds?.includes(s.id);
           return (
-          <div key={s.id} onClick={()=>!alreadyImported && importSavedSet(s.id)} style={{background:alreadyImported?"#f0f0f0":"#f8f9fa",opacity:alreadyImported?0.6:1,padding:"2vh 2vw",borderRadius:"1.5vh",cursor:alreadyImported?"not-allowed":"pointer",border:alreadyImported?"1px solid #ddd":"1px solid #e0e0e0",transition:"background 0.2s"}} onMouseEnter={e=>!alreadyImported&&(e.currentTarget.style.background="#e3f2fd")} onMouseLeave={e=>!alreadyImported&&(e.currentTarget.style.background="#f8f9fa")}>
+          <div key={s.id} onClick={()=>!alreadyImported && importSavedSet(s.id)} style={{background:alreadyImported?"#f0f0f0":"#f8f9fa",opacity:alreadyImported ? 0.6 : 1,padding:"2vh 2vw",borderRadius:"1.5vh",cursor:alreadyImported?"not-allowed":"pointer",border:alreadyImported?"1px solid #ddd":"1px solid #e0e0e0",transition:"background 0.2s"}} onMouseEnter={e=>!alreadyImported&&(e.currentTarget.style.background="#e3f2fd")} onMouseLeave={e=>!alreadyImported&&(e.currentTarget.style.background="#f8f9fa")}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontWeight:600,fontSize:"1.8vh",color:alreadyImported?"#888":"#1a1a2e"}}>{s.name}</div>
@@ -601,7 +600,7 @@ function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign,onLogout}){
   const {programs, trainers}=db;
   const [assignModalProg, setAssignModalProg] = useState(null);
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="page-header">
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
       <div className="page-title-container">
         <div className="page-title" style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תוכניות אימון</div>
