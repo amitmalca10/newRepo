@@ -43,21 +43,21 @@ const globalCss = `
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 1vh; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* הגדרות פלאפון */
+  /* הגדרות פלאפון - תוקן */
   @media (max-width: 768px) {
     .app-layout { 
       flex-direction: column-reverse !important; 
-      height: 100vh !important; 
+      height: 100dvh !important; /* DVH פותר את בעיית שורת הכתובת באייפון */
       width: 100vw !important;
       overflow: hidden !important; 
     }
     
-    /* תפריט תחתון קטן וקבוע */
+    /* תפריט תחתון קבוע, גמיש ומותאם */
     .sidebar { 
       width: 100vw !important; 
-      height: 9vh !important; /* גובה קבוע וקטן לתפריט תחתון */
-      min-height: 60px !important;
-      padding: 0.5vh 2vw !important; 
+      height: auto !important; /* מתאים את הגובה לתוכן אוטומטית */
+      min-height: 8vh !important;
+      padding: 1.5vh 2vw calc(1.5vh + env(safe-area-inset-bottom)) 2vw !important; /* מרחיק מהפס של האייפון */
       flex-direction: row !important; 
       justify-content: space-around !important; 
       align-items: center !important;
@@ -66,13 +66,30 @@ const globalCss = `
       flex-shrink: 0;
     }
     .sidebar-header { display: none !important; }
-    .sidebar-item { flex-direction: column !important; gap: 0.5vh !important; padding: 1vh 2vw !important; border-right: none !important; font-size: 1.5vh !important; justify-content: center !important; text-align: center; width: 22vw !important; }
-    .sidebar-item.active { background: rgba(255,255,255,0.2) !important; border-radius: 1vh !important; }
+    
+    .sidebar-item { 
+      flex-direction: column !important; 
+      gap: 0.8vh !important; 
+      padding: 1vh 1vw !important; 
+      border-right: none !important; 
+      font-size: 3.2vw !important; /* פונט יחסי לרוחב כדי למנוע גלישה */
+      justify-content: center !important; 
+      align-items: center !important;
+      text-align: center; 
+      width: 22vw !important; 
+      border-radius: 1.5vh !important;
+    }
+    .sidebar-item span:first-child {
+      font-size: 5.5vw !important; /* גודל האייקון */
+      line-height: 1 !important;
+    }
+    .sidebar-item.active { background: rgba(255,255,255,0.2) !important; }
     .sidebar-logout { display: none !important; } 
     
     /* אזור התוכן המרכזי גליל */
     .main-pad { 
-      height: 91vh !important; /* משלים ל-100% יחד עם התפריט */
+      flex: 1 !important; /* לוקח את כל המקום שנשאר במסך, מונע דחיפה של התפריט החוצה */
+      height: auto !important; 
       width: 100vw !important;
       padding: 2vh 4vw !important; 
       overflow-y: auto !important;
@@ -94,7 +111,6 @@ const globalCss = `
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 function Avatar({trainer,size=36}){
-  // שומר על פיקסלים בלוגו כדי שיישאר מעגל מושלם ולא יתעוות
   return <div style={{width:size,height:size,borderRadius:"50%",background:colorFor(trainer.id),display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:600,fontSize:size*0.35,flexShrink:0,userSelect:"none"}}>{initials(trainer)}</div>;
 }
 function Btn({children,onClick,primary,danger,sm,disabled,full,style:s}){
@@ -143,8 +159,7 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    // חסימת גלילה מלאה
-    <div style={{display:"flex", height:"100vh", width:"100vw", position:"fixed", inset:0, overflow:"hidden", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
+    <div style={{display:"flex", height:"100dvh", width:"100vw", position:"fixed", inset:0, overflow:"hidden", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
       <style dangerouslySetInnerHTML={{ __html: globalCss }} />
       <div style={{background:"#fff", padding:"5vh 4vw", borderRadius:"3vh", boxShadow:"0 1vh 4vh rgba(21,101,192,0.1)", width:"85%", maxWidth:"400px", textAlign:"center", maxHeight:"90vh", overflowY:"auto"}}>
         <div style={{fontSize:"6vh", marginBottom:"2vh"}}>🏋️</div>
@@ -187,7 +202,7 @@ function Sidebar({page,setPage, onLogout}){
     </div>
     
     <div style={{flex:1, display:"flex", flexDirection:"column", gap:"1vh", padding:"0 1vw"}}>
-      {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"0.3vw solid #fff":"0.3vw solid transparent",fontWeight:page===n.id?600:400,fontSize:"1.7vh",transition:"all .15s", borderRadius: page===n.id?"0 1vh 1vh 0":"0"}}>
+      {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"0.3vw solid #fff":"0.3vw solid transparent",fontWeight:page===n.id?600:400,fontSize:"1.7vh",transition:"all .15s", borderRadius: page===n.id?"0 1.5vh 1.5vh 0":"0"}}>
         <span>{n.icon}</span><span>{n.label}</span>
       </div>)}
     </div>
@@ -205,7 +220,7 @@ function Dashboard({db,onAddTrainer}){
   const {trainers,sessions}=db;
   const totalWeek=sessions.filter(s=>{const{sun,sat}=getWeekRange();return s.date>=sun&&s.date<=sat;}).length;
   const avgPer=trainers.length?(totalWeek/trainers.length).toFixed(1):0;
-  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF", height:"100vh"}}>
+  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"3vh"}}>
       <div><div style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>שלום מנהל! 👋</div><div style={{color:"#666",fontSize:"1.8vh",marginTop:"0.5vh"}}>סקירת שבוע</div></div>
       <Btn primary onClick={onAddTrainer}>+ הוסף</Btn>
@@ -224,7 +239,7 @@ function Dashboard({db,onAddTrainer}){
 
 function TrainersPage({db,onAdd,onDelete,onEdit}){
   const {trainers,sessions,programs}=db;
-  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF", height:"100vh"}}>
+  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <div style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>מתאמנים</div>
       <Btn primary onClick={onAdd}>+ הוסף מתאמן</Btn>
@@ -260,7 +275,7 @@ function TrainersPage({db,onAdd,onDelete,onEdit}){
 
 function SavedSetsPage({db,onAdd,onEdit,onDelete}){
   const {savedSets}=db;
-  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF", height:"100vh"}}>
+  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <div>
         <div style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תבניות וסטים שמורים</div>
@@ -300,7 +315,7 @@ function SavedSetBuilder({setObj:initSet, onSave, onCancel}){
 
   const valid = prog.name.trim() && prog.exercises.length > 0 && prog.exercises.every(e => e.name.trim());
 
-  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF", height:"100vh"}}>
+  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <div style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תבנית חדשה":"✏️ עריכת תבנית"}</div>
       <div style={{display:"flex",alignItems:"center",gap:"1vw"}}><Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0"}}>ביטול</Btn><Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור</Btn></div>
@@ -378,7 +393,7 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
 
   const inputStyle={width:"100%",padding:"1.5vh 1.5vw",border:"1.5px solid #e0e0e0",borderRadius:"1vh",fontSize:"1.6vh",direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
 
-  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF", height:"100vh"}}>
+  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div className="exercise-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
       <div style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תוכנית חדשה":"✏️ עריכת תוכנית"}</div>
       <div style={{display:"flex",alignItems:"center",gap:"1vw"}}>
@@ -452,7 +467,7 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
 function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign}){
   const {programs, trainers}=db;
   const [assignModalProg, setAssignModalProg] = useState(null);
-  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF", height:"100vh"}}>
+  return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}><div style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תוכניות אימון</div><Btn primary onClick={onAdd}>+ תוכנית</Btn></div>
     <div style={{display:"flex",flexDirection:"column",gap:"2vh"}}>
       {programs.map(p=>(
@@ -619,11 +634,11 @@ export default function App(){
     });
   },[]);
 
-  if (authChecking) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",direction:"rtl",fontSize:"3vh"}}>בודק התחברות...</div>;
+  if (authChecking) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100dvh",direction:"rtl",fontSize:"3vh"}}>בודק התחברות...</div>;
   if (!isAuthenticated) return <LoginPage onLogin={handleLogin} />;
 
   if (role === "user") {
-    return <div style={{display:"flex", height:"100vh", width:"100vw", overflow:"hidden", position:"fixed", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
+    return <div style={{display:"flex", height:"100dvh", width:"100vw", overflow:"hidden", position:"fixed", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />
         <div style={{background:"#fff", padding:"6vh 8vw", borderRadius:"3vh", textAlign:"center", boxShadow:"0 1vh 3vh rgba(21,101,192,0.1)"}}>
             <div style={{fontSize:"8vh", marginBottom:"2vh"}}>🚧</div>
@@ -634,7 +649,7 @@ export default function App(){
     </div>;
   }
 
-  if(loading || !db) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",direction:"rtl",fontSize:"3vh"}}>טוען נתונים מהשרת...</div>;
+  if(loading || !db) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100dvh",direction:"rtl",fontSize:"3vh"}}>טוען נתונים מהשרת...</div>;
 
   const addTrainer = async form => {
     try {
@@ -708,9 +723,9 @@ export default function App(){
 
   return <>
     <style dangerouslySetInnerHTML={{ __html: globalCss }} />
-    <div className="app-layout" style={{display:"flex",height:"100vh",width:"100vw",overflow:"hidden",direction:"rtl",fontFamily:"sans-serif"}}>
+    <div className="app-layout" style={{display:"flex",height:"100dvh",width:"100vw",overflow:"hidden",direction:"rtl",fontFamily:"sans-serif"}}>
       <Sidebar page={page} setPage={navTo} onLogout={handleLogout} />
-      {saving&&<div style={{position:"fixed",bottom:"3vh",left:"3vw",background:"#1565C0",color:"#fff",padding:"1vh 2vw",borderRadius:"1vh",zIndex:9999, fontSize:"1.5vh"}}>שומר...</div>}
+      {saving&&<div style={{position:"fixed",bottom:"12vh",left:"4vw",background:"#1565C0",color:"#fff",padding:"1vh 2vw",borderRadius:"1vh",zIndex:9999, fontSize:"1.5vh"}}>שומר...</div>}
 
       {programBuilderTarget!==null ? 
         <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} savedSets={db.savedSets} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
