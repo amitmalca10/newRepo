@@ -69,6 +69,7 @@ class ProgramModel(BaseModel):
     level: str = "בינוני"
     sessionsPerWeek: int = 3
     days: List[Day] = []
+    importedSetIds: List[str] = [] # <--- השורה החדשה שהוספנו
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
