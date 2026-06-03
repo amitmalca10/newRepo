@@ -37,29 +37,29 @@ const getWeekCount = (sessions,tid) => {
 // ─── Global Responsive CSS ────────────────────────────────────────────────────
 const globalCss = `
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 0; overflow: hidden; /* מונע גלילה כפולה במסך הראשי */ }
+  body { margin: 0; padding: 0; overflow: hidden; }
   ::-webkit-scrollbar { width: 0.6vw; height: 0.6vw; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 1vh; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* הגדרות פלאפון - תוקן */
+  /* הגדרות פלאפון - תיקון שורת התפריט */
   @media (max-width: 768px) {
     .app-layout { 
       flex-direction: column-reverse !important; 
-      height: 100dvh !important; /* DVH פותר את בעיית שורת הכתובת באייפון */
+      height: 100dvh !important; 
       width: 100vw !important;
       overflow: hidden !important; 
     }
     
-    /* תפריט תחתון קבוע, גמיש ומותאם */
+    /* תפריט תחתון קבוע */
     .sidebar { 
       width: 100vw !important; 
-      height: auto !important; /* מתאים את הגובה לתוכן אוטומטית */
+      height: auto !important; 
       min-height: 8vh !important;
-      padding: 1.5vh 2vw calc(1.5vh + env(safe-area-inset-bottom)) 2vw !important; /* מרחיק מהפס של האייפון */
+      padding: 1vh 0 calc(1vh + env(safe-area-inset-bottom)) 0 !important;
       flex-direction: row !important; 
-      justify-content: space-around !important; 
+      justify-content: center !important; 
       align-items: center !important;
       z-index: 100; 
       border-top: 1px solid rgba(255,255,255,0.1); 
@@ -67,28 +67,39 @@ const globalCss = `
     }
     .sidebar-header { display: none !important; }
     
+    /* ה-div שעוטף את הכפתורים חייב להיות שורה (row) בפלאפון */
+    .sidebar-nav {
+      flex-direction: row !important;
+      width: 100% !important;
+      justify-content: space-around !important;
+      align-items: center !important;
+      padding: 0 1vw !important;
+      gap: 0 !important;
+    }
+    
+    /* עיצוב כל כפתור בתפריט (אייקון מעל טקסט) */
     .sidebar-item { 
       flex-direction: column !important; 
-      gap: 0.8vh !important; 
-      padding: 1vh 1vw !important; 
+      gap: 0.5vh !important; 
+      padding: 1vh 0 !important; 
       border-right: none !important; 
-      font-size: 3.2vw !important; /* פונט יחסי לרוחב כדי למנוע גלישה */
+      font-size: 3vw !important; 
       justify-content: center !important; 
       align-items: center !important;
       text-align: center; 
-      width: 22vw !important; 
+      width: 23vw !important; 
       border-radius: 1.5vh !important;
     }
     .sidebar-item span:first-child {
-      font-size: 5.5vw !important; /* גודל האייקון */
+      font-size: 6vw !important; 
       line-height: 1 !important;
     }
     .sidebar-item.active { background: rgba(255,255,255,0.2) !important; }
     .sidebar-logout { display: none !important; } 
     
-    /* אזור התוכן המרכזי גליל */
+    /* אזור התוכן המרכזי */
     .main-pad { 
-      flex: 1 !important; /* לוקח את כל המקום שנשאר במסך, מונע דחיפה של התפריט החוצה */
+      flex: 1 !important; 
       height: auto !important; 
       width: 100vw !important;
       padding: 2vh 4vw !important; 
@@ -201,7 +212,8 @@ function Sidebar({page,setPage, onLogout}){
       <div style={{color:"#fff",fontWeight:700,fontSize:"2.2vh"}}>לא נשית איי</div>
     </div>
     
-    <div style={{flex:1, display:"flex", flexDirection:"column", gap:"1vh", padding:"0 1vw"}}>
+    {/* ה-div הזה קיבל את המחלקה sidebar-nav כדי שנוכל לשלוט בו בפלאפון */}
+    <div className="sidebar-nav" style={{flex:1, display:"flex", flexDirection:"column", gap:"1vh", padding:"0 1vw"}}>
       {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"0.3vw solid #fff":"0.3vw solid transparent",fontWeight:page===n.id?600:400,fontSize:"1.7vh",transition:"all .15s", borderRadius: page===n.id?"0 1.5vh 1.5vh 0":"0"}}>
         <span>{n.icon}</span><span>{n.label}</span>
       </div>)}
