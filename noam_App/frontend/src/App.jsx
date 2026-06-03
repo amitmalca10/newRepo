@@ -43,8 +43,14 @@ const globalCss = `
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 1vh; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* הגדרות פלאפון - תיקון שורת התפריט */
+  /* מחלקות עזר כלליות */
+  .mobile-logout-btn { display: none; }
+  .hide-on-mobile { display: block; }
+
+  /* הגדרות פלאפון */
   @media (max-width: 768px) {
+    .hide-on-mobile { display: none !important; }
+
     .app-layout { 
       flex-direction: column-reverse !important; 
       height: 100dvh !important; 
@@ -67,7 +73,6 @@ const globalCss = `
     }
     .sidebar-header { display: none !important; }
     
-    /* ה-div שעוטף את הכפתורים חייב להיות שורה (row) בפלאפון */
     .sidebar-nav {
       flex-direction: row !important;
       width: 100% !important;
@@ -77,7 +82,6 @@ const globalCss = `
       gap: 0 !important;
     }
     
-    /* עיצוב כל כפתור בתפריט (אייקון מעל טקסט) */
     .sidebar-item { 
       flex-direction: column !important; 
       gap: 0.5vh !important; 
@@ -96,6 +100,70 @@ const globalCss = `
     }
     .sidebar-item.active { background: rgba(255,255,255,0.2) !important; }
     .sidebar-logout { display: none !important; } 
+
+    /* סידור ההדר העליון בפלאפון (כותרת באמצע, כפתורים בצדדים) */
+    .page-header {
+      position: relative;
+      justify-content: center !important;
+      align-items: center !important;
+      min-height: 5vh;
+      margin-bottom: 2.5vh !important;
+      display: flex !important;
+    }
+    .page-title-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 45vw; /* מונע מהכותרת לדרוס את הכפתורים */
+      text-align: center;
+    }
+    .page-title {
+      font-size: 2.4vh !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      text-align: center;
+    }
+    .page-subtitle {
+      font-size: 1.4vh !important;
+      text-align: center;
+    }
+    .page-action-btn {
+      position: absolute !important;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      gap: 1vw;
+      align-items: center;
+    }
+    .page-action-btn button {
+      padding: 1vh 2vw !important;
+      font-size: 1.4vh !important;
+    }
+    
+    /* כפתור ההתנתקות שמופיע רק בפלאפון (ימין למעלה) */
+    .mobile-logout-btn {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #d32f2f;
+      color: #fff;
+      border: none;
+      font-size: 1.4vh;
+      font-weight: 600;
+      padding: 1vh 2vw;
+      border-radius: 1vh;
+      cursor: pointer;
+      gap: 1vw;
+      z-index: 10;
+    }
     
     /* אזור התוכן המרכזי */
     .main-pad { 
@@ -212,15 +280,15 @@ function Sidebar({page,setPage, onLogout}){
       <div style={{color:"#fff",fontWeight:700,fontSize:"2.2vh"}}>לא נשית איי</div>
     </div>
     
-    {/* ה-div הזה קיבל את המחלקה sidebar-nav כדי שנוכל לשלוט בו בפלאפון */}
     <div className="sidebar-nav" style={{flex:1, display:"flex", flexDirection:"column", gap:"1vh", padding:"0 1vw"}}>
       {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"0.3vw solid #fff":"0.3vw solid transparent",fontWeight:page===n.id?600:400,fontSize:"1.7vh",transition:"all .15s", borderRadius: page===n.id?"0 1.5vh 1.5vh 0":"0"}}>
         <span>{n.icon}</span><span>{n.label}</span>
       </div>)}
     </div>
 
+    {/* כפתור התנתקות במחשב (אדום בולט) */}
     <div className="sidebar-logout" style={{padding:"2.5vh 1.5vw", borderTop:"1px solid rgba(255,255,255,.15)"}}>
-      <div onClick={onLogout} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:"rgba(255,255,255,.8)", borderRadius:"1vh", fontSize:"1.7vh", fontWeight:500, transition:"background 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+      <div onClick={onLogout} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:"#fff", background:"#d32f2f", borderRadius:"1vh", fontSize:"1.7vh", fontWeight:600, transition:"background 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="#b71c1c"} onMouseLeave={e=>e.currentTarget.style.background="#d32f2f"}>
         <span>🚪</span> התנתק
       </div>
     </div>
@@ -228,14 +296,18 @@ function Sidebar({page,setPage, onLogout}){
 }
 
 // ─── Dashboard, TrainersPage, SavedSets, ProgramBuilder... ────────────────────
-function Dashboard({db,onAddTrainer}){
+function Dashboard({db,onAddTrainer,onLogout}){
   const {trainers,sessions}=db;
   const totalWeek=sessions.filter(s=>{const{sun,sat}=getWeekRange();return s.date>=sun&&s.date<=sat;}).length;
   const avgPer=trainers.length?(totalWeek/trainers.length).toFixed(1):0;
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"3vh"}}>
-      <div><div style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>שלום מנהל! 👋</div><div style={{color:"#666",fontSize:"1.8vh",marginTop:"0.5vh"}}>סקירת שבוע</div></div>
-      <Btn primary onClick={onAddTrainer}>+ הוסף</Btn>
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
+      <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
+      <div className="page-title-container">
+        <div className="page-title" style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>שלום מנהל! 👋</div>
+        <div className="page-subtitle" style={{color:"#666",fontSize:"1.8vh",marginTop:"0.5vh"}}>סקירת שבוע</div>
+      </div>
+      <div className="page-action-btn"><Btn primary onClick={onAddTrainer}>+ הוסף</Btn></div>
     </div>
     <div className="mob-stack" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"1.5vw",marginBottom:"4vh"}}>
       {[{label:"סך אימונים השבוע",value:totalWeek,unit:"אימונים"},{label:"מתאמנים פעילים",value:trainers.length,unit:"מתאמנים"},{label:"ממוצע למתאמן",value:avgPer,unit:"אימונים לשבוע"}].map((s,i)=><div key={i} style={{background:"#fff",borderRadius:"2vh",padding:"2.5vh 2.5vw",boxShadow:"0 0.5vh 2vh rgba(33,150,243,.08)"}}>
@@ -249,12 +321,15 @@ function Dashboard({db,onAddTrainer}){
   </div>;
 }
 
-function TrainersPage({db,onAdd,onDelete,onEdit}){
+function TrainersPage({db,onAdd,onDelete,onEdit,onLogout}){
   const {trainers,sessions,programs}=db;
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
-      <div style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>מתאמנים</div>
-      <Btn primary onClick={onAdd}>+ הוסף מתאמן</Btn>
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
+      <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
+      <div className="page-title-container">
+        <div className="page-title" style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>מתאמנים</div>
+      </div>
+      <div className="page-action-btn"><Btn primary onClick={onAdd}>+ הוסף מתאמן</Btn></div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:"1.5vw"}}>
       {trainers.map(t=>{
@@ -285,15 +360,16 @@ function TrainersPage({db,onAdd,onDelete,onEdit}){
   </div>;
 }
 
-function SavedSetsPage({db,onAdd,onEdit,onDelete}){
+function SavedSetsPage({db,onAdd,onEdit,onDelete,onLogout}){
   const {savedSets}=db;
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
-      <div>
-        <div style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תבניות וסטים שמורים</div>
-        <div style={{fontSize:"1.7vh",color:"#666",marginTop:"0.5vh"}}>צור תבניות מוכנות מראש לשילוב מהיר בתוכניות</div>
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
+      <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
+      <div className="page-title-container">
+        <div className="page-title" style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תבניות וסטים שמורים</div>
+        <div className="page-subtitle" style={{fontSize:"1.7vh",color:"#666",marginTop:"0.5vh"}}>צור תבניות מוכנות מראש לשילוב מהיר בתוכניות</div>
       </div>
-      <Btn primary onClick={onAdd}>+ תבנית חדשה</Btn>
+      <div className="page-action-btn"><Btn primary onClick={onAdd}>+ תבנית חדשה</Btn></div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"1.5vw"}}>
       {savedSets.map(s=>(
@@ -314,7 +390,7 @@ function SavedSetsPage({db,onAdd,onEdit,onDelete}){
   </div>;
 }
 
-function SavedSetBuilder({setObj:initSet, onSave, onCancel}){
+function SavedSetBuilder({setObj:initSet, onSave, onCancel, onLogout}){
   const isNew = !initSet;
   const blankSet = {name:"", exercises:[]};
   const [prog, setProg] = useState(isNew ? blankSet : {...initSet, exercises:initSet.exercises?.map(e=>({...e}))||[]});
@@ -328,9 +404,12 @@ function SavedSetBuilder({setObj:initSet, onSave, onCancel}){
   const valid = prog.name.trim() && prog.exercises.length > 0 && prog.exercises.every(e => e.name.trim());
 
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
-      <div style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תבנית חדשה":"✏️ עריכת תבנית"}</div>
-      <div style={{display:"flex",alignItems:"center",gap:"1vw"}}><Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0"}}>ביטול</Btn><Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור</Btn></div>
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
+      <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
+      <div className="page-title-container">
+        <div className="page-title" style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תבנית חדשה":"✏️ עריכת תבנית"}</div>
+      </div>
+      <div className="page-action-btn" style={{display:"flex",alignItems:"center",gap:"1vw"}}><Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0"}}>ביטול</Btn><Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור</Btn></div>
     </div>
     <div style={{background:"#fff",borderRadius:"2vh",padding:"3vh",marginBottom:"3vh",boxShadow:"0 0.5vh 2vh rgba(33,150,243,.06)"}}>
       <label style={{fontSize:"1.5vh",color:"#555",display:"block",marginBottom:"1vh",fontWeight:500}}>שם התבנית / סט</label>
@@ -363,7 +442,7 @@ function SavedSetBuilder({setObj:initSet, onSave, onCancel}){
   </div>;
 }
 
-function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel}){
+function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel, onLogout}){
   const isNew=!initProg;
   const blankProg={name:"",desc:"",level:"בינוני",sessionsPerWeek:3,days:[]};
   const [prog,setProg]=useState(isNew?blankProg:{...initProg,days:initProg.days?.map(d=>({...d,exercises:d.exercises?.map(e=>({...e}))}))||[]});
@@ -406,10 +485,13 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
   const inputStyle={width:"100%",padding:"1.5vh 1.5vw",border:"1.5px solid #e0e0e0",borderRadius:"1vh",fontSize:"1.6vh",direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
 
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div className="exercise-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
-      <div style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תוכנית חדשה":"✏️ עריכת תוכנית"}</div>
-      <div style={{display:"flex",alignItems:"center",gap:"1vw"}}>
-        {errorMsg && <div style={{background:"#ffebee",color:"#d32f2f",padding:"1vh 1.5vw",borderRadius:"1vh",fontSize:"1.4vh",fontWeight:600}}>{errorMsg}</div>}
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
+      <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
+      <div className="page-title-container">
+        <div className="page-title" style={{fontSize:"2.5vh",fontWeight:700,color:"#1a1a2e"}}>{isNew?"✨ תוכנית חדשה":"✏️ עריכת תוכנית"}</div>
+      </div>
+      <div className="page-action-btn" style={{display:"flex",alignItems:"center",gap:"1vw"}}>
+        {errorMsg && <div className="hide-on-mobile" style={{background:"#ffebee",color:"#d32f2f",padding:"1vh 1.5vw",borderRadius:"1vh",fontSize:"1.4vh",fontWeight:600}}>{errorMsg}</div>}
         <Btn onClick={onCancel} style={{background:"#fff",border:"1.5px solid #e0e0e0",color:"#555"}}>ביטול</Btn>
         <Btn primary disabled={!valid} onClick={()=>onSave(prog)}>💾 שמור</Btn>
       </div>
@@ -476,11 +558,17 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
   </div>;
 }
 
-function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign}){
+function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign,onLogout}){
   const {programs, trainers}=db;
   const [assignModalProg, setAssignModalProg] = useState(null);
   return <div className="main-pad" style={{padding:"3vh 3vw",direction:"rtl",flex:1,overflowY:"auto",background:"#F0F4FF"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}><div style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תוכניות אימון</div><Btn primary onClick={onAdd}>+ תוכנית</Btn></div>
+    <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh"}}>
+      <button className="mobile-logout-btn" onClick={onLogout}>🚪 התנתק</button>
+      <div className="page-title-container">
+        <div className="page-title" style={{fontSize:"2.8vh",fontWeight:700,color:"#1a1a2e"}}>תוכניות אימון</div>
+      </div>
+      <div className="page-action-btn"><Btn primary onClick={onAdd}>+ תוכנית</Btn></div>
+    </div>
     <div style={{display:"flex",flexDirection:"column",gap:"2vh"}}>
       {programs.map(p=>(
         <div key={p.id} className="prog-card" onClick={()=>onEdit(p)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:"2vh",padding:"2.5vh 3vw",cursor:"pointer",boxShadow:"0 0.5vh 2vh rgba(33,150,243,.06)",borderRight:"0.5vw solid #2196F3"}}>
@@ -649,6 +737,7 @@ export default function App(){
   if (authChecking) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100dvh",direction:"rtl",fontSize:"3vh"}}>בודק התחברות...</div>;
   if (!isAuthenticated) return <LoginPage onLogin={handleLogin} />;
 
+  // אזור מתאמנים עם כפתור התנתקות אדום גם כן
   if (role === "user") {
     return <div style={{display:"flex", height:"100dvh", width:"100vw", overflow:"hidden", position:"fixed", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />
@@ -656,7 +745,7 @@ export default function App(){
             <div style={{fontSize:"8vh", marginBottom:"2vh"}}>🚧</div>
             <h1 style={{color:"#1a1a2e", marginBottom:"1vh", fontSize:"3.5vh"}}>אזור מתאמנים</h1>
             <p style={{color:"#666", marginBottom:"4vh", fontSize:"2vh"}}>האזור האישי שלך נמצא כרגע בבנייה. נחזור בקרוב!</p>
-            <Btn primary onClick={handleLogout}>🚪 התנתק</Btn>
+            <Btn style={{background:"#d32f2f", color:"#fff"}} onClick={handleLogout}>🚪 התנתק</Btn>
         </div>
     </div>;
   }
@@ -740,14 +829,14 @@ export default function App(){
       {saving&&<div style={{position:"fixed",bottom:"12vh",left:"4vw",background:"#1565C0",color:"#fff",padding:"1vh 2vw",borderRadius:"1vh",zIndex:9999, fontSize:"1.5vh"}}>שומר...</div>}
 
       {programBuilderTarget!==null ? 
-        <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} savedSets={db.savedSets} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)}/>
+        <ProgramBuilder program={programBuilderTarget==="new"?null:programBuilderTarget} programs={db.programs} savedSets={db.savedSets} onSave={saveProgram} onCancel={()=>setProgramBuilderTarget(null)} onLogout={handleLogout}/>
       : savedSetBuilderTarget!==null ?
-        <SavedSetBuilder setObj={savedSetBuilderTarget==="new"?null:savedSetBuilderTarget} onSave={saveSavedSet} onCancel={()=>setSavedSetBuilderTarget(null)}/>
+        <SavedSetBuilder setObj={savedSetBuilderTarget==="new"?null:savedSetBuilderTarget} onSave={saveSavedSet} onCancel={()=>setSavedSetBuilderTarget(null)} onLogout={handleLogout}/>
       : <>
-          {page==="dashboard"&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")}/>}
-          {page==="trainers"&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}}/>}
-          {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} onDelete={deleteProgram} onAssign={assignProgram}/>}
-          {page==="savedSets"&&<SavedSetsPage db={db} onAdd={()=>setSavedSetBuilderTarget("new")} onEdit={s=>setSavedSetBuilderTarget(s)} onDelete={deleteSavedSet}/>}
+          {page==="dashboard"&&<Dashboard db={db} onAddTrainer={()=>setModal("add-trainer")} onLogout={handleLogout}/>}
+          {page==="trainers"&&<TrainersPage db={db} onAdd={()=>setModal("add-trainer")} onDelete={deleteTrainer} onEdit={t=>{setEditTarget(t);setModal("edit-trainer");}} onLogout={handleLogout}/>}
+          {page==="programs"&&<ProgramsPage db={db} onAdd={()=>setProgramBuilderTarget("new")} onEdit={p=>setProgramBuilderTarget(p)} onDelete={deleteProgram} onAssign={assignProgram} onLogout={handleLogout}/>}
+          {page==="savedSets"&&<SavedSetsPage db={db} onAdd={()=>setSavedSetBuilderTarget("new")} onEdit={s=>setSavedSetBuilderTarget(s)} onDelete={deleteSavedSet} onLogout={handleLogout}/>}
         </>
       }
 
