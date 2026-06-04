@@ -37,146 +37,51 @@ const getWeekCount = (sessions,tid) => {
 // ─── Global Responsive CSS ────────────────────────────────────────────────────
 const globalCss = `
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 0; overflow: hidden; }
+  body { margin: 0; padding: 0; overflow: hidden; background: #F0F4FF; }
   ::-webkit-scrollbar { width: 0.6vw; height: 0.6vw; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 1vh; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* אנימציות טעינה (ספינר) */
+  /* אנימציות טעינה */
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .main-spinner { width: 6vh; height: 6vh; border: 0.6vh solid rgba(21, 101, 192, 0.2); border-top-color: #1565C0; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2vh; }
   .toast-spinner { width: 2.5vh; height: 2.5vh; border: 0.3vh solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
 
-  /* מחלקות עזר כלליות */
+  /* אנימציית גלים לכפתור האימון בדף הבית */
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    80% { transform: scale(1.3); opacity: 0; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  /* מחלקות עזר לניהול Admin */
   .mobile-logout-btn { display: none; }
   .hide-on-mobile { display: block; }
 
-  /* הגדרות פלאפון */
+  /* הגדרות פלאפון Admin */
   @media (max-width: 768px) {
     .hide-on-mobile { display: none !important; }
-
-    .app-layout { 
-      flex-direction: column-reverse !important; 
-      height: 100dvh !important; 
-      width: 100vw !important;
-      overflow: hidden !important; 
-    }
+    .app-layout { flex-direction: column-reverse !important; height: 100dvh !important; width: 100vw !important; overflow: hidden !important; }
     
-    /* תפריט תחתון קבוע */
-    .sidebar { 
-      width: 100vw !important; 
-      height: auto !important; 
-      min-height: 8vh !important;
-      padding: 1vh 0 calc(1vh + env(safe-area-inset-bottom)) 0 !important;
-      flex-direction: row !important; 
-      justify-content: center !important; 
-      align-items: center !important;
-      z-index: 100; 
-      border-top: 1px solid rgba(255,255,255,0.1); 
-      flex-shrink: 0;
-    }
+    .sidebar { width: 100vw !important; height: auto !important; min-height: 8vh !important; padding: 1vh 0 calc(1vh + env(safe-area-inset-bottom)) 0 !important; flex-direction: row !important; justify-content: center !important; align-items: center !important; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
     .sidebar-header { display: none !important; }
-    
-    .sidebar-nav {
-      flex-direction: row !important;
-      width: 100% !important;
-      justify-content: space-around !important;
-      align-items: center !important;
-      padding: 0 1vw !important;
-      gap: 0 !important;
-    }
-    
-    .sidebar-item { 
-      flex-direction: column !important; 
-      gap: 0.5vh !important; 
-      padding: 1vh 0 !important; 
-      border-right: none !important; 
-      font-size: 3vw !important; 
-      justify-content: center !important; 
-      align-items: center !important;
-      text-align: center; 
-      width: 23vw !important; 
-      border-radius: 1.5vh !important;
-    }
-    .sidebar-item span:first-child {
-      font-size: 6vw !important; 
-      line-height: 1 !important;
-    }
+    .sidebar-nav { flex-direction: row !important; width: 100% !important; justify-content: space-around !important; align-items: center !important; padding: 0 1vw !important; gap: 0 !important; }
+    .sidebar-item { flex-direction: column !important; gap: 0.5vh !important; padding: 1vh 0 !important; border-right: none !important; font-size: 3vw !important; justify-content: center !important; align-items: center !important; text-align: center; width: 23vw !important; border-radius: 1.5vh !important; }
+    .sidebar-item span:first-child { font-size: 6vw !important; line-height: 1 !important; }
     .sidebar-item.active { background: rgba(255,255,255,0.2) !important; }
     .sidebar-logout { display: none !important; } 
 
-    /* סידור ההדר העליון בפלאפון */
-    .page-header {
-      position: relative !important;
-      justify-content: center !important;
-      align-items: center !important;
-      min-height: 5vh !important;
-      margin-bottom: 2.5vh !important;
-      display: flex !important;
-    }
-    .page-title-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      max-width: 45vw;
-      text-align: center;
-    }
-    .page-title {
-      font-size: 2.4vh !important;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
-      text-align: center;
-    }
-    .page-subtitle {
-      font-size: 1.4vh !important;
-      text-align: center;
-    }
-    .page-action-btn {
-      position: absolute !important;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      gap: 1vw;
-      align-items: center;
-    }
-    .page-action-btn button {
-      padding: 1vh 2vw !important;
-      font-size: 1.4vh !important;
-    }
+    .page-header { position: relative !important; justify-content: center !important; align-items: center !important; min-height: 5vh !important; margin-bottom: 2.5vh !important; display: flex !important; }
+    .page-title-container { display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 45vw; text-align: center; }
+    .page-title { font-size: 2.4vh !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
+    .page-subtitle { font-size: 1.4vh !important; text-align: center; }
+    .page-action-btn { position: absolute !important; left: 0; top: 50%; transform: translateY(-50%); display: flex; gap: 1vw; align-items: center; }
+    .page-action-btn button { padding: 1vh 2vw !important; font-size: 1.4vh !important; }
     
-    .mobile-logout-btn {
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #d32f2f;
-      color: #fff;
-      border: none;
-      font-size: 1.4vh;
-      font-weight: 600;
-      padding: 1vh 2vw;
-      border-radius: 1vh;
-      cursor: pointer;
-      gap: 1vw;
-      z-index: 10;
-    }
+    .mobile-logout-btn { display: flex !important; align-items: center; justify-content: center; position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: #d32f2f; color: #fff; border: none; font-size: 1.4vh; font-weight: 600; padding: 1vh 2vw; border-radius: 1vh; cursor: pointer; gap: 1vw; z-index: 10; }
     
-    .main-pad { 
-      flex: 1 !important; 
-      height: auto !important; 
-      width: 100vw !important;
-      padding: 2vh 4vw !important; 
-      overflow-y: auto !important;
-    }
-    
+    .main-pad { flex: 1 !important; height: auto !important; width: 100vw !important; padding: 2vh 4vw !important; overflow-y: auto !important; }
     .mob-stack { grid-template-columns: 1fr !important; display: flex !important; flex-direction: column !important; gap: 2vh !important; }
     .mob-grid-2 { grid-template-columns: 1fr 1fr !important; gap: 2vw !important; }
     .builder-grid { display: flex !important; flex-direction: column !important; gap: 2vh !important; }
@@ -189,11 +94,38 @@ const globalCss = `
     .modal-box { width: 92vw !important; padding: 3vh 4vw !important; max-height: 85vh !important; }
     .modal-grid { grid-template-columns: 1fr !important; gap: 1.5vh !important; }
   }
+
+  /* עיצוב אפליקציית מתאמן (Trainee UI) */
+  .trainee-wrapper { display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; background: #eef2f6; }
+  .trainee-container { width: 100%; max-width: 450px; height: 100%; background: #ffffff; position: relative; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.05); overflow: hidden; }
+  .trainee-content { flex: 1; overflow-y: auto; padding: 3vh 6vw; padding-bottom: 12vh; display: flex; flex-direction: column; background: #ffffff; }
+  
+  .trainee-top-bar { display: flex; justify-content: space-between; align-items: center; padding: 2vh 0 3vh 0; }
+  .trainee-top-title { font-size: 2.4vh; font-weight: 800; color: #1a1a2e; }
+  .trainee-top-icon { font-size: 2.8vh; color: #1565c0; cursor: pointer; }
+
+  .trainee-nav-bar { position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff; display: flex; justify-content: space-around; align-items: center; padding: 1.5vh 2vw calc(1.5vh + env(safe-area-inset-bottom)) 2vw; border-top: 1px solid #f0f0f0; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.02); }
+  .t-nav-item { display: flex; flex-direction: column; align-items: center; gap: 0.5vh; color: #a0aec0; cursor: pointer; flex: 1; transition: 0.2s; }
+  .t-nav-item.active { color: #1565C0; }
+  .t-nav-icon { font-size: 2.6vh; }
+  .t-nav-text { font-size: 1.3vh; font-weight: 600; }
+
+  /* מעגלי הכפתור דף הבית מתאמן */
+  .big-play-btn-wrapper { position: relative; margin: 8vh auto 4vh auto; display: flex; justify-content: center; align-items: center; width: 26vh; height: 26vh; }
+  .circle-ripple-1 { position: absolute; width: 100%; height: 100%; background: rgba(41, 182, 246, 0.15); border-radius: 50%; animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+  .circle-ripple-2 { position: absolute; width: 85%; height: 85%; background: rgba(41, 182, 246, 0.25); border-radius: 50%; animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; animation-delay: 0.5s; }
+  .big-play-btn { position: relative; width: 70%; height: 70%; background: #29B6F6; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; box-shadow: 0 1vh 3vh rgba(41, 182, 246, 0.4); cursor: pointer; z-index: 2; transition: transform 0.1s; }
+  .big-play-btn:active { transform: scale(0.95); }
+
+  /* טאבים תוכנית אימונים */
+  .program-day-tabs { display: flex; gap: 4vw; border-bottom: 2px solid #f0f4f8; margin-bottom: 3vh; overflow-x: auto; padding-bottom: 0.5vh; }
+  .day-tab { padding: 1vh 2vw; font-size: 1.8vh; color: #a0aec0; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.2s; }
+  .day-tab.active { color: #1565c0; font-weight: 700; border-bottom: 3px solid #1565c0; }
 `;
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 function Avatar({trainer,size=36}){
-  return <div style={{width:size,height:size,borderRadius:"50%",background:colorFor(trainer.id),display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:600,fontSize:size*0.35,flexShrink:0,userSelect:"none"}}>{initials(trainer)}</div>;
+  return <div style={{width:size,height:size,borderRadius:"50%",background:colorFor(trainer?.id||"1"),display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:600,fontSize:size*0.35,flexShrink:0,userSelect:"none"}}>{initials(trainer||{fname:"ד",lname:"ל"})}</div>;
 }
 function Btn({children,onClick,primary,danger,sm,disabled,full,style:s}){
   return <button onClick={onClick} disabled={disabled} style={{padding:sm?"1vh 1.5vw":"1.5vh 2vw",borderRadius:"1vh",border:"none",cursor:disabled?"not-allowed":"pointer",fontSize:sm?"1.5vh":"1.7vh",fontWeight:600,fontFamily:"inherit",background:primary?"#2196F3":danger?"#fff0f0":"#f0f0f0",color:primary?"#fff":danger?"#e53935":"#333",transition:"all .15s",opacity:disabled?.6:1,width:full?"100%":"auto",...(s||{})}}>{children}</button>;
@@ -261,7 +193,7 @@ function LoginPage({ onLogin }) {
         
         <form onSubmit={submit} style={{display:"flex", flexDirection:"column", gap:"2.5vh"}}>
           <div style={{textAlign:"right"}}>
-            <label style={{fontSize:"1.6vh", color:"#555", fontWeight:600, display:"block", marginBottom:"1vh"}}>מספר פלאפון / דוא"ל</label>
+            <label style={{fontSize:"1.6vh", color:"#555", fontWeight:600, display:"block", marginBottom:"1vh"}}>שם משתמש / טלפון / אימייל</label>
             <input required value={identifier} onChange={e=>setIdentifier(e.target.value)} style={{width:"100%", padding:"1.8vh 2vw", border:"1.5px solid #e0e0e0", borderRadius:"1.5vh", outline:"none", fontSize:"1.8vh", fontFamily:"inherit", boxSizing:"border-box", transition:"0.2s"}} onFocus={e=>e.target.style.borderColor="#1565C0"} onBlur={e=>e.target.style.borderColor="#e0e0e0"} placeholder="הזן פרטי זיהוי" />
           </div>
           <div style={{textAlign:"right"}}>
@@ -280,7 +212,237 @@ function LoginPage({ onLogin }) {
   );
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
+// ─── Trainee App (User UI) ────────────────────────────────────────────────────
+function TraineeHome({ user }) {
+  const firstName = user?.fname || "דניאל";
+  return (
+    <>
+      <div className="trainee-top-bar">
+        <div className="trainee-top-title">שלום {firstName}!</div>
+        <div className="trainee-top-icon">🔔</div>
+      </div>
+
+      <div style={{background: "#E1F5FE", borderRadius: "2vh", padding: "3.5vh 4vw", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2vh"}}>
+        <div style={{display: "flex", flexDirection: "column", gap: "0.5vh"}}>
+          <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>נותרו לך עוד</span>
+          <span style={{color: "#0277BD", fontSize: "3.5vh", fontWeight: 800, lineHeight: 1}}>3 אימונים</span>
+          <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>לשבוע הקרוב</span>
+        </div>
+        <div style={{fontSize: "7vh", opacity: 0.8}}>📅</div>
+      </div>
+
+      <div className="big-play-btn-wrapper">
+        <div className="circle-ripple-1"></div>
+        <div className="circle-ripple-2"></div>
+        <div className="big-play-btn">
+          <span style={{fontSize: "5vh"}}>🏋️‍♂️</span>
+          <span style={{fontSize: "2vh", fontWeight: 700, marginTop: "1vh"}}>יצאתי להתאמן</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function TraineeProgram({ db, user }) {
+  const [activeDay, setActiveDay] = useState(0);
+  
+  const program = db?.programs?.find(p => p.id === user?.programId) || {
+    name: "תוכנית אימונים", days: [
+      { name: "יום 1", exercises: [
+        { id: 1, name: "הליכה מהירה", note: "5 דקות על הליכון", sets: null, reps: null, type: "warmup" },
+        { id: 2, name: "סקוואט", sets: 4, reps: 12, type: "strength" },
+        { id: 3, name: "לחיצת חזה", sets: 4, reps: 10, type: "strength" },
+        { id: 4, name: "חתירה", sets: 4, reps: 12, type: "strength" },
+        { id: 5, name: "לחיצת כתפיים", sets: 3, reps: 12, type: "strength" },
+        { id: 6, name: "מתיחות", note: "10 דקות שחרור", sets: null, reps: null, type: "finish" },
+      ]},
+      { name: "יום 2", exercises: [] },
+      { name: "יום 3", exercises: [] }
+    ]
+  };
+
+  const days = program.days || [];
+  const exercises = days[activeDay]?.exercises || [];
+
+  const categorize = (index, length) => {
+    if (index === 0) return "חימום";
+    if (index === length - 1) return "סיום";
+    return "אימון כוח";
+  };
+
+  let currentCategory = "";
+
+  return (
+    <>
+      <div className="trainee-top-bar">
+        <div className="trainee-top-icon">➔</div>
+        <div className="trainee-top-title">תוכנית אימונים</div>
+        <div className="trainee-top-icon">☰</div>
+      </div>
+
+      <div className="program-day-tabs">
+        {days.map((d, i) => (
+          <div key={i} className={`day-tab ${activeDay === i ? 'active' : ''}`} onClick={() => setActiveDay(i)}>
+            {d.name || `יום ${i + 1}`}
+          </div>
+        ))}
+      </div>
+
+      <div style={{display: "flex", flexDirection: "column", gap: "2vh"}}>
+        {exercises.length === 0 && <div style={{textAlign:"center", padding:"10vh 0", color:"#a0aec0"}}>אין תרגילים ביום זה</div>}
+        
+        {exercises.map((ex, i) => {
+          const category = ex.type === "warmup" ? "חימום" : ex.type === "finish" ? "סיום" : categorize(i, exercises.length);
+          const showHeader = category !== currentCategory;
+          if (showHeader) currentCategory = category;
+
+          return (
+            <div key={ex.id || i}>
+              {showHeader && <div style={{color: "#1565C0", fontSize: "1.8vh", fontWeight: 700, marginBottom: "1.5vh", marginTop: i > 0 ? "2vh" : 0}}>{category}</div>}
+              
+              <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", padding: "1.5vh 0", borderBottom: "1px solid #f0f4f8"}}>
+                <div style={{display: "flex", alignItems: "center", gap: "3vw"}}>
+                  <div style={{width: "6vh", height: "6vh", background: "#f8f9fa", borderRadius: "1.5vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5vh", color: "#1565C0"}}>
+                    {category === "חימום" ? "⏱️" : category === "סיום" ? "🧘" : "🧍‍♂️"}
+                  </div>
+                  <div style={{display: "flex", flexDirection: "column"}}>
+                    <span style={{fontSize: "1.8vh", fontWeight: 700, color: "#1a1a2e"}}>{ex.name}</span>
+                    <span style={{fontSize: "1.5vh", color: "#666", marginTop: "0.2vh"}}>
+                      {ex.sets && ex.reps ? `${ex.sets} סטים × ${ex.reps} חזרות` : ex.note || "לפי הצורך"}
+                    </span>
+                  </div>
+                </div>
+                <div style={{fontSize: "2.2vh", color: "#e2e8f0", fontWeight: 700}}>{i + 1}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function TraineeProfile({ user, onLogout }) {
+  const dummyUser = { fname: "דניאל", lname: "לוי", email: "daniel@gmail.com", ...user };
+  
+  return (
+    <>
+      <div className="trainee-top-bar">
+        <div className="trainee-top-icon">➔</div>
+        <div className="trainee-top-title">הגדרות מתאמן</div>
+        <div className="trainee-top-icon" onClick={onLogout} style={{color: "#d32f2f", fontSize: "2.2vh"}}>🚪 יציאה</div>
+      </div>
+
+      <div style={{background: "#F8FAFC", borderRadius: "2vh", padding: "2.5vh 4vw", display: "flex", alignItems: "center", gap: "4vw", marginBottom: "4vh"}}>
+        <Avatar trainer={dummyUser} size={64}/>
+        <div style={{display: "flex", flexDirection: "column", gap: "0.5vh"}}>
+          <div style={{fontSize: "2.2vh", fontWeight: 700, color: "#1a1a2e"}}>{dummyUser.fname} {dummyUser.lname}</div>
+          <div style={{fontSize: "1.5vh", color: "#64748b"}}>{dummyUser.email}</div>
+        </div>
+      </div>
+
+      <div style={{marginBottom: "4vh"}}>
+        <div style={{color: "#1565C0", fontSize: "1.8vh", fontWeight: 700, marginBottom: "2vh"}}>הגדרות שבועיות</div>
+        
+        <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f4f8", paddingBottom: "1.5vh", marginBottom: "2vh"}}>
+          <span style={{fontSize: "1.7vh", color: "#475569"}}>מספר אימונים בשבוע</span>
+          <select style={{border: "none", outline: "none", background: "transparent", fontSize: "1.7vh", fontWeight: 600, color: "#1a1a2e", direction: "rtl", appearance: "none"}}>
+            <option>4</option>
+            <option>3</option>
+            <option>5</option>
+          </select>
+        </div>
+        
+        <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f4f8", paddingBottom: "1.5vh"}}>
+          <span style={{fontSize: "1.7vh", color: "#475569"}}>יום תחילת שבוע</span>
+          <select style={{border: "none", outline: "none", background: "transparent", fontSize: "1.7vh", fontWeight: 600, color: "#1a1a2e", direction: "rtl", appearance: "none"}}>
+            <option>ראשון</option>
+            <option>שני</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={{marginBottom: "5vh"}}>
+        <div style={{color: "#1565C0", fontSize: "1.8vh", fontWeight: 700, marginBottom: "2vh"}}>יעדים</div>
+        
+        <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f4f8", paddingBottom: "1.5vh", marginBottom: "2vh"}}>
+          <span style={{fontSize: "1.7vh", color: "#475569"}}>מטרה עיקרית</span>
+          <select style={{border: "none", outline: "none", background: "transparent", fontSize: "1.7vh", fontWeight: 600, color: "#1a1a2e", direction: "rtl", appearance: "none"}}>
+            <option>חיזוק שרירים</option>
+            <option>ירידה במשקל</option>
+          </select>
+        </div>
+        
+        <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f4f8", paddingBottom: "1.5vh"}}>
+          <span style={{fontSize: "1.7vh", color: "#475569"}}>תאריך יעד</span>
+          <div style={{display: "flex", alignItems: "center", gap: "1vw"}}>
+            <span style={{color: "#1565C0"}}>📅</span>
+            <span style={{fontSize: "1.7vh", fontWeight: 600, color: "#1a1a2e"}}>30/06/2026</span>
+          </div>
+        </div>
+      </div>
+
+      <button style={{width: "100%", background: "#2196F3", color: "#fff", padding: "2vh", borderRadius: "1.5vh", border: "none", fontSize: "1.8vh", fontWeight: 700, cursor: "pointer"}}>
+        שמור
+      </button>
+    </>
+  );
+}
+
+function TraineeHistory() {
+  return (
+    <>
+      <div className="trainee-top-bar">
+        <div className="trainee-top-title">היסטוריית אימונים</div>
+        <div className="trainee-top-icon">🕒</div>
+      </div>
+      <div style={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", color: "#a0aec0", gap: "2vh"}}>
+        <div style={{fontSize: "6vh"}}>🏆</div>
+        <div style={{fontSize: "2vh", fontWeight: 600}}>עדיין אין אימונים להציג</div>
+      </div>
+    </>
+  );
+}
+
+function TraineeApp({ db, onLogout }) {
+  const [activeTab, setActiveTab] = useState("home");
+  
+  // מנסה למשוך את פרטי המשתמש הנוכחי (או משתמש דמי לצורך עיצוב)
+  const currentUserId = localStorage.getItem("fitcoach_userId");
+  const currentUser = db?.trainers?.find(t => t.id === currentUserId) || db?.trainers?.[0] || { fname: "דניאל", lname: "לוי", email: "daniel@gmail.com" };
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: globalCss }} />
+      <div className="trainee-wrapper">
+        <div className="trainee-container">
+          <div className="trainee-content">
+            {activeTab === "home" && <TraineeHome user={currentUser} />}
+            {activeTab === "program" && <TraineeProgram db={db} user={currentUser} />}
+            {activeTab === "history" && <TraineeHistory />}
+            {activeTab === "profile" && <TraineeProfile user={currentUser} onLogout={onLogout} />}
+          </div>
+          
+          <div className="trainee-nav-bar">
+            {[
+              { id: "profile", icon: "👤", label: "פרופיל" },
+              { id: "program", icon: "📋", label: "תוכנית אימונים" },
+              { id: "history", icon: "🕒", label: "היסטוריית אימונים" },
+              { id: "home", icon: "🏠", label: "בית" }
+            ].map(tab => (
+              <div key={tab.id} className={`t-nav-item ${activeTab === tab.id ? "active" : ""}`} onClick={() => setActiveTab(tab.id)}>
+                <span className="t-nav-icon">{tab.icon}</span>
+                <span className="t-nav-text">{tab.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Sidebar (Admin) ──────────────────────────────────────────────────────────
 function Sidebar({page,setPage, onLogout}){
   const nav=[
     {id:"dashboard",icon:"🏠",label:"סקירה כללית"},
@@ -308,7 +470,7 @@ function Sidebar({page,setPage, onLogout}){
   </div>;
 }
 
-// ─── Dashboard, TrainersPage, SavedSets, ProgramBuilder... ────────────────────
+// ─── Dashboard, TrainersPage, SavedSets, ProgramBuilder (Admin) ───────────────
 function Dashboard({db,onAddTrainer,onLogout}){
   const {trainers,sessions}=db;
   const totalWeek=sessions.filter(s=>{const{sun,sat}=getWeekRange();return s.date>=sun&&s.date<=sat;}).length;
@@ -738,26 +900,44 @@ export default function App(){
 
   const handleLogin = async (identifier, password) => {
     try {
-      const res = await fetch(`${API_URL}/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier, password }) });
+      // חיתוך רווחים מיותרים מההתחלה והסוף של שם המשתמש והסיסמה
+      const cleanIdentifier = identifier.trim();
+      const cleanPassword = password.trim();
+
+      const res = await fetch(`${API_URL}/login`, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ identifier: cleanIdentifier, password: cleanPassword }) 
+      });
+      
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
           localStorage.setItem("fitcoach_token", data.token);
           localStorage.setItem("fitcoach_role", data.role);
+          // שמירת ה-ID של המתאמן כדי שנוכל להציג את הנתונים שלו בעמוד המתאמן
+          if (data.userId) localStorage.setItem("fitcoach_userId", data.userId);
+          
           setIsAuthenticated(true);
           setRole(data.role);
           return { success: true };
         }
+      } else if (res.status === 401) {
+        // טיפול חכם בשגיאת 401 שמגיעה מה-FastAPI שלך
+        const errData = await res.json();
+        return { success: false, error: errData.detail || "שם משתמש או סיסמה שגויים" };
       }
+      
       return { success: false, error: "שם משתמש או סיסמה שגויים" };
     } catch (err) {
-      return { success: false, error: "שגיאת תקשורת עם השרת" };
+      return { success: false, error: "שגיאת תקשורת עם השרת. ודא שהבקנד פועל." };
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("fitcoach_token");
     localStorage.removeItem("fitcoach_role");
+    localStorage.removeItem("fitcoach_userId");
     setIsAuthenticated(false);
     setRole(null);
     setDb(null);
@@ -775,20 +955,14 @@ export default function App(){
   if (authChecking) return <FullScreenLoader text="בודק התחברות..." />;
   if (!isAuthenticated) return <LoginPage onLogin={handleLogin} />;
 
-  if (role === "user") {
-    return <div style={{display:"flex", height:"100dvh", width:"100vw", overflow:"hidden", position:"fixed", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
-        <style dangerouslySetInnerHTML={{ __html: globalCss }} />
-        <div style={{background:"#fff", padding:"6vh 8vw", borderRadius:"3vh", textAlign:"center", boxShadow:"0 1vh 3vh rgba(21,101,192,0.1)"}}>
-            <div style={{fontSize:"8vh", marginBottom:"2vh"}}>🚧</div>
-            <h1 style={{color:"#1a1a2e", marginBottom:"1vh", fontSize:"3.5vh"}}>אזור מתאמנים</h1>
-            <p style={{color:"#666", marginBottom:"4vh", fontSize:"2vh"}}>האזור האישי שלך נמצא כרגע בבנייה. נחזור בקרוב!</p>
-            <Btn style={{background:"#d32f2f", color:"#fff"}} onClick={handleLogout}>🚪 התנתק</Btn>
-        </div>
-    </div>;
-  }
-
   if(loading || !db) return <FullScreenLoader text="טוען נתונים מהשרת..." />;
 
+  // 🏋️‍♂️ חווית משתמש - מתאמן
+  if (role === "user") {
+    return <TraineeApp db={db} onLogout={handleLogout} />;
+  }
+
+  // 🛠️ חווית מנהל - Admin
   const addTrainer = async form => {
     try {
       const res = await fetch(`${API_URL}/trainers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
