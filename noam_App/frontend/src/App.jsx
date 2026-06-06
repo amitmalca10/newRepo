@@ -174,7 +174,7 @@ function LoginPage({ onLogin }) {
     <div style={{display:"flex", height:"100dvh", width:"100vw", position:"fixed", inset:0, overflow:"hidden", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
       <style dangerouslySetInnerHTML={{ __html: globalCss }} />
       <div style={{background:"#fff", padding:"5vh 4vw", borderRadius:"3vh", boxShadow:"0 1vh 4vh rgba(21,101,192,0.1)", width:"85%", maxWidth:"400px", textAlign:"center", maxHeight:"90vh", overflowY:"auto"}}>
-        <div style={{fontSize:"6vh", marginBottom:"2vh"}}>🏋️</div>
+         <img src="/images/tab-image.png" alt="Logo" style={{ height: "15vh", width: "15vh", objectFit: "contain" }} />
         <h1 style={{fontSize:"3vh", fontWeight:700, color:"#1a1a2e", marginBottom:"1vh", margin:0}}>ברוך הבא</h1>
         <p style={{fontSize:"1.8vh", color:"#666", marginBottom:"4vh", marginTop:"1vh"}}>לא נשית איי - כניסה למערכת</p>
         <form onSubmit={submit} style={{display:"flex", flexDirection:"column", gap:"2.5vh"}}>
@@ -213,7 +213,7 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
     <>
       <div className="trainee-top-bar">
         <div style={{display: "flex", alignItems: "center", gap: "2vw"}}>
-          <div style={{fontSize: "3.5vh"}}>🏋️</div>
+        <img src="/images/tab-image.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }} />
           {/* הוספת התו \u200F מבטיח שסימן הקריאה ישאר בצד שמאל בשפות RTL */}
           <div className="trainee-top-title">{"שלום " + firstName + "!\u200F"}</div>
         </div>
@@ -236,7 +236,7 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
             </div>
             <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>לשבוע הקרוב</span>
           </div>
-          <div style={{fontSize: "7vh", opacity: 0.8}}>📅</div>
+        <img src="images\calender.png" alt="Calendar" style={{height: "7vh", opacity: 0.8 , margin: "3vh"}} />
         </div>
       )}
 
@@ -517,7 +517,7 @@ function Sidebar({page,setPage, onLogout}){
   const nav=[{id:"dashboard",icon:"🏠",label:"סקירה כללית"},{id:"trainers",icon:"👥",label:"מתאמנים"},{id:"programs",icon:"📋",label:"תוכניות אימון"},{id:"savedSets",icon:"🗂️",label:"תבניות וסטים"}];
   return <div className="sidebar" style={{width:"16vw",minWidth:"180px",flexShrink:0,background:"#1565C0",display:"flex",flexDirection:"column",paddingTop:"4vh"}}>
     <div className="sidebar-header" style={{textAlign:"center",marginBottom:"4vh",paddingBottom:"2vh",borderBottom:"1px solid rgba(255,255,255,.15)"}}>
-      <div style={{fontSize:"3.5vh",marginBottom:"0.5vh"}}>🏋️</div><div style={{color:"#fff",fontWeight:700,fontSize:"2.2vh"}}>לא נשית איי</div>
+      <img src="/images/tab-image.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }} /><div style={{color:"#fff",fontWeight:700,fontSize:"2.2vh"}}>לא נשית איי</div>
     </div>
     <div className="sidebar-nav" style={{flex:1, display:"flex", flexDirection:"column", gap:"1vh", padding:"0 1vw"}}>
       {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"0.3vw solid #fff":"0.3vw solid transparent",fontWeight:page===n.id?600:400,fontSize:"1.7vh",transition:"all .15s", borderRadius: page===n.id?"0 1.5vh 1.5vh 0":"0"}}>
