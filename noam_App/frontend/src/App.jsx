@@ -217,7 +217,7 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
           {/* הוספת התו \u200F מבטיח שסימן הקריאה ישאר בצד שמאל בשפות RTL */}
           <div className="trainee-top-title">{"שלום " + firstName + "!\u200F"}</div>
         </div>
-        <div onClick={onLogout} style={{color: "#d32f2f", cursor: "pointer", fontSize: "1.8vh", fontWeight: 600}}>🚪 יציאה</div>
+         <div onClick={onLogout} style={{background: "#d32f2f", color: "#fff", padding: "0.8vh 2vw", borderRadius: "1vh", cursor: "pointer", fontSize: "1.6vh", fontWeight: 700}}>🚪 יציאה</div>
       </div>
 
       {remaining === 0 && totalSessions > 0 ? (
@@ -271,7 +271,7 @@ function TraineeProgram({ db, user, setActiveTab, onLogout }) {
       <div className="trainee-top-bar">
         <div className="trainee-top-icon" onClick={() => setActiveTab("home")}>➔</div>
         <div className="trainee-top-title">תוכנית אימונים</div>
-        <div onClick={onLogout} style={{color: "#d32f2f", cursor: "pointer", fontSize: "1.8vh", fontWeight: 600}}>🚪 יציאה</div>
+         <div onClick={onLogout} style={{background: "#d32f2f", color: "#fff", padding: "0.8vh 2vw", borderRadius: "1vh", cursor: "pointer", fontSize: "1.6vh", fontWeight: 700}}>🚪 יציאה</div>
       </div>
       <div className="program-day-tabs">
         {days.map((d, i) => (
