@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Body
+from fastapi import Header
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 from fastapi.middleware.cors import CORSMiddleware
@@ -94,7 +95,9 @@ class TrainerModel(BaseModel):
     weight: Optional[str] = ""
     goal: Optional[str] = ""
     programId: Optional[str] = None
-    role: Optional[str] = "user" # הוספת תפקיד (admin או user)
+    role: Optional[str] = "user"
+    birthDate: Optional[str] = ""  # תאריך לידה
+    age: Optional[int] = None      # גיל מחושב
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -240,3 +243,42 @@ async def get_sessions():
 async def create_session(session: SessionModel):
     new_session = await sessions_collection.insert_one(session.dict(by_alias=True, exclude={"id"}))
     return await sessions_collection.find_one({"_id": new_session.inserted_id})
+
+@app.put("/trainers/{id}")
+async def update_trainer(id: str, data: dict = Body(...), authorization: str = Header(None)):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
+    
+    # 1. אבטחה: בדיקת קיום ותקינות של הטוקן
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized - Missing or invalid token")
+        
+    token = authorization.split(" ")[1]
+    token_user_id = token.replace("secure_token_", "")
+    
+    # 2. בדיקה האם המשתמש המבקש הוא מנהל (Admin)
+    is_admin = False
+    if ObjectId.is_valid(token_user_id):
+        user_record = await trainers_collection.find_one({"_id": ObjectId(token_user_id)})
+        if user_record and user_record.get("role") == "admin":
+            is_admin = True
+            
+    # 3. אם זה מתאמן שמנסה לערוך מתאמן *אחר* - חסום גישה
+    if not is_admin and token_user_id != id:
+        raise HTTPException(status_code=403, detail="Forbidden - You can only edit your own profile")
+
+    # 4. חסימה קשיחה: הסרת שדות שלא ניתנים לעריכה לאחר ההרשמה (לכולם)
+    data.pop("_id", None)
+    data.pop("id", None)
+    data.pop("birthDate", None)
+    data.pop("age", None)
+
+    # 5. הגבלה למתאמן: רשאי לעדכן רק מטרה, משקל וסיסמה
+    if not is_admin:
+        allowed_fields = {"password", "weight", "goal"}
+        data = {k: v for k, v in data.items() if k in allowed_fields}
+
+    # 6. שמירה במסד הנתונים
+    if data:
+        await trainers_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        
+    return {"status": "updated"}
