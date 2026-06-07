@@ -213,41 +213,86 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
   const sessionsThisWeek = db?.sessions?.filter(s => s.trainerId === user?.id && s.date >= sun && s.date <= sat).length || 0;
   const remaining = Math.max(0, totalSessions - sessionsThisWeek);
 
+  // סגנון משותף ואחיד לכל הבאנרים כדי להבטיח רוחב מלא ויישור מושלם לימין
+  const bannerStyle = {
+    borderRadius: "2vh",
+    padding: "3.5vh 4vw",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "2vh",
+    direction: "rtl",
+    width: "100%", // מכריח פריסה על כל הרוחב
+    boxSizing: "border-box" 
+  };
+
+  const textContainerStyle = {
+    display: "flex",
+    flexDirection: "column",
+    flex: 1, // הטקסט מקבל את כל המרחב הפנוי 
+    alignItems: "flex-start", // מצמיד הכל ימינה (RTL)
+    textAlign: "right",
+    paddingLeft: "2vw" // קצת אוויר מהאייקון
+  };
+
+  const iconStyle = {
+    fontSize: "6.5vh",
+    opacity: 0.8,
+    flexShrink: 0, // מונע מהאייקון להימחץ פנימה ולשבור את הטקסט
+    marginLeft: "1vw",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  };
+
   return (
     <>
       <div className="trainee-top-bar">
         <div style={{display: "flex", alignItems: "center", gap: "2vw"}}>
-         <img src="/images/tab-image.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }} />
+          <img src="/images/tab-image.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }} />
           <div className="trainee-top-title">{"שלום " + firstName + "!\u200F"}</div>
         </div>
         <div onClick={onLogout} style={{background: "#d32f2f", color: "#fff", padding: "0.8vh 2vw", borderRadius: "1vh", cursor: "pointer", fontSize: "1.6vh", fontWeight: 700}}>🚪 יציאה</div>
       </div>
 
       {!program ? (
-        <div style={{background: "#FFF3E0", borderRadius: "2vh", padding: "3.5vh 4vw", display: "flex", justifyContent: "center", alignItems: "center", marginTop: "2vh", boxShadow: "0 0.5vh 1.5vh rgba(230,81,0,0.1)"}}>
-          <span style={{color: "#E65100", fontSize: "1.8vh", fontWeight: 700, textAlign: "center", lineHeight: 1.4}}>?עוד אין תכנית אימונים<br/>🛶?מי יסחב את הסירות </span>
+        <div style={{...bannerStyle, background: "#FFF3E0", boxShadow: "0 0.5vh 1.5vh rgba(230,81,0,0.1)"}}>
+          <div style={textContainerStyle}>
+            <span style={{color: "#E65100", fontSize: "2.1vh", fontWeight: 800}}>עוד אין תכנית אימונים?</span>
+            <span style={{color: "#E65100", fontSize: "1.8vh", fontWeight: 600, marginTop: "0.5vh"}}>מי יסחב את הסירות?</span>
+          </div>
+          <div style={iconStyle}>🛶</div>
         </div>
       ) : remaining === 0 && totalSessions > 0 ? (
-        <div style={{background: "url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif') center/cover", borderRadius: "2vh", marginTop: "2vh", position: "relative", overflow: "hidden"}}>
-            <div style={{background: "rgba(232, 245, 233, 0.85)", padding: "3.5vh 4vw", display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%"}}>
-              <span style={{color: "#2e7d32", fontSize: "2.2vh", fontWeight: 800, textAlign: "center", textShadow: "0 1px 2px rgba(255,255,255,0.8)"}}>סיימת את כל האימונים שלך להשבוע תותח 🎉</span>
+        <div style={{...bannerStyle, background: "url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif') center/cover", position: "relative", overflow: "hidden", padding: 0}}>
+            <div style={{background: "rgba(232, 245, 233, 0.85)", padding: "3.5vh 4vw", display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", height: "100%", direction: "rtl"}}>
+              <div style={textContainerStyle}>
+                <span style={{color: "#2e7d32", fontSize: "2.3vh", fontWeight: 800, textShadow: "0 1px 2px rgba(255,255,255,0.8)"}}>סיימת את כל האימונים שלך השבוע!</span>
+                <span style={{color: "#2e7d32", fontSize: "1.8vh", fontWeight: 600, marginTop: "0.5vh", textShadow: "0 1px 2px rgba(255,255,255,0.8)"}}>איזה תותח🎉 </span>
+              </div>
+              <div style={iconStyle}>🏆</div>
             </div>
         </div>
       ) : (
-        <div style={{background: "#E1F5FE", borderRadius: "2vh", padding: "3.5vh 5vw", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2vh"}}>
-          <div style={{display: "flex", flexDirection: "column", gap: "0.5vh"}}>
-            <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>נותרו לך עוד</span>
-            
-            {/* התיקון: תצוגת שורה אחת, שימוש ב-baseline וגדלים שונים למספר ולטקסט */}
-            <div style={{display: "flex", alignItems: "baseline", gap: "1vw", whiteSpace: "nowrap", direction: "rtl"}}>
-              <span style={{color: "#0277BD", fontSize: "4.5vh", fontWeight: 800, lineHeight: 1}}>{remaining}</span>
-              <span style={{color: "#0277BD", fontSize: "2.8vh", fontWeight: 800, lineHeight: 1}}>אימונים</span>
+        <div style={{...bannerStyle, background: "#E1F5FE"}}>
+          
+          {remaining === 1 ? (
+            <div style={textContainerStyle}>
+              <span style={{color: "#0277BD", fontSize: "2.4vh", fontWeight: 800}}>אכן ידידי!</span>
+              <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 600, marginTop: "0.5vh"}}>נותר לך עוד אימון אחד אחרון לשבוע הקרוב</span>
             </div>
-            
-            <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>לשבוע הקרוב</span>
-          </div>
-          {/* הוספת flexShrink כדי שהאייקון לא יימחץ */}
-          <div style={{fontSize: "7vh", opacity: 0.8, flexShrink: 0, marginLeft: "1vw"}}>📅</div>
+          ) : (
+            <div style={textContainerStyle}>
+              <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>נותרו לך עוד</span>
+              <div style={{display: "flex", alignItems: "baseline", gap: "1vw", whiteSpace: "nowrap"}}>
+                <span style={{color: "#0277BD", fontSize: "4.5vh", fontWeight: 800, lineHeight: 1}}>{remaining}</span>
+                <span style={{color: "#0277BD", fontSize: "2.8vh", fontWeight: 800, lineHeight: 1}}>אימונים</span>
+              </div>
+              <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>לשבוע הקרוב</span>
+            </div>
+          )}
+          
+          <div style={iconStyle}>📅</div>
         </div>
       )}
 
