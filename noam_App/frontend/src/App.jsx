@@ -292,7 +292,7 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
             </div>
           )}
           
-          <div style={iconStyle}>📅</div>
+          <img src="/images/tab-image.png" alt="Logo" style={iconStyle}/>
         </div>
       )}
 
