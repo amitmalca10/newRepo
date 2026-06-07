@@ -98,8 +98,8 @@ const globalCss = `
   .trainee-top-icon { font-size: 2.8vh; color: #1565c0; cursor: pointer; }
 
   .trainee-nav-bar { position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff; display: flex; justify-content: space-around; align-items: center; padding: 1.5vh 2vw calc(1.5vh + env(safe-area-inset-bottom)) 2vw; border-top: 1px solid #f0f0f0; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.02); }
-  .t-nav-item { display: flex; flex-direction: column; align-items: center; gap: 0.5vh; color: #a0aec0; cursor: pointer; flex: 1; transition: 0.2s; }
-  .t-nav-item.active { color: #1565C0; }
+  .t-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5vh; color: #a0aec0; cursor: pointer; flex: 1; transition: 0.2s; padding: 1vh 0; border-radius: 1.5vh; margin: 0 1vw; }
+  .t-nav-item.active { color: #1565C0; background: #E1F5FE; }
   .t-nav-icon { font-size: 2.6vh; }
   .t-nav-text { font-size: 1.3vh; font-weight: 600; }
 
@@ -109,11 +109,11 @@ const globalCss = `
   .big-play-btn { position: relative; width: 70%; height: 70%; background: #29B6F6; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; box-shadow: 0 1vh 3vh rgba(41, 182, 246, 0.4); cursor: pointer; z-index: 2; transition: transform 0.1s; }
   .big-play-btn:active { transform: scale(0.95); }
 
-  .program-day-tabs { display: flex; gap: 4vw; border-bottom: 2px solid #f0f4f8; margin-bottom: 3vh; overflow-x: auto; padding-bottom: 0.5vh; }
-  .day-tab { padding: 1vh 2vw; font-size: 1.8vh; color: #a0aec0; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.2s; }
+  .program-day-tabs { display: flex; gap: 4vw; border-bottom: 2px solid #f0f4f8; margin-bottom: 3vh; overflow-x: auto; padding-bottom: 1.5vh; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .program-day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab { flex-shrink: 0; padding: 1vh 2vw; font-size: 1.8vh; color: #a0aec0; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.2s; }
   .day-tab.active { color: #1565c0; font-weight: 700; border-bottom: 3px solid #1565c0; }
 
-  /* אנימציית בלונים ליום הולדת */
   .balloon { position: absolute; bottom: -20vh; width: 5vh; height: 6.5vh; border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; opacity: 0.85; animation: floatUp linear infinite; box-shadow: inset -0.5vh -0.5vh 1vh rgba(0,0,0,0.1); }
   .balloon::after { content: ''; position: absolute; bottom: -0.8vh; left: 50%; transform: translateX(-50%); width: 0.5vh; height: 1vh; background: inherit; }
   @keyframes floatUp { to { transform: translateY(-120vh) rotate(15deg); } }
@@ -126,13 +126,16 @@ function Avatar({trainer,size=36}){
 function Btn({children,onClick,primary,danger,sm,disabled,full,style:s}){
   return <button onClick={onClick} disabled={disabled} style={{padding:sm?"1vh 1.5vw":"1.5vh 2vw",borderRadius:"1vh",border:"none",cursor:disabled?"not-allowed":"pointer",fontSize:sm?"1.5vh":"1.7vh",fontWeight:600,fontFamily:"inherit",background:primary?"#2196F3":danger?"#fff0f0":"#f0f0f0",color:primary?"#fff":danger?"#e53935":"#333",transition:"all .15s",opacity:disabled?.6:1,width:full?"100%":"auto",...(s||{})}}>{children}</button>;
 }
-function Inp({label,style:s,...props}){
+
+// עודכן לקבל error ולהציג סגנון שגיאה במידת הצורך
+function Inp({label, error, style:s, ...props}){
   return <div style={{marginBottom:"1.5vh"}}>
     {label&&<label style={{fontSize:"1.5vh",color:"#555",display:"block",marginBottom:"0.5vh",fontWeight:500}}>{label}</label>}
-    <input style={{width:"100%",padding:"1.2vh 1vw",border:"1.5px solid #e0e0e0",borderRadius:"1vh",fontSize:"1.6vh",direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box",...(s||{})}}
-      onFocus={e=>!props.disabled && (e.target.style.borderColor="#2196F3")} onBlur={e=>!props.disabled && (e.target.style.borderColor="#e0e0e0")} {...props}/>
+    <input style={{width:"100%",padding:"1.2vh 1vw",border:error?"1.5px solid #d32f2f":"1.5px solid #e0e0e0",borderRadius:"1vh",fontSize:"1.6vh",direction:"rtl",outline:"none",fontFamily:"inherit",boxSizing:"border-box",backgroundColor:error?"#ffebee":(props.disabled?"#f5f5f5":"#fff"),...(s||{})}}
+      onFocus={e=>!props.disabled && (e.target.style.borderColor=error?"#d32f2f":"#2196F3")} onBlur={e=>!props.disabled && (e.target.style.borderColor=error?"#d32f2f":"#e0e0e0")} {...props}/>
   </div>;
 }
+
 function Modal({open,onClose,title,children,wide}){
   if(!open) return null;
   return <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",direction:"rtl"}}>
@@ -145,6 +148,7 @@ function Modal({open,onClose,title,children,wide}){
     </div>
   </div>;
 }
+
 function FullScreenLoader({ text }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", width: "100vw", position: "fixed", inset: 0, alignItems: "center", justifyContent: "center", background: "#F0F4FF", direction: "rtl", zIndex: 9999 }}>
@@ -174,12 +178,12 @@ function LoginPage({ onLogin }) {
     <div style={{display:"flex", height:"100dvh", width:"100vw", position:"fixed", inset:0, overflow:"hidden", alignItems:"center", justifyContent:"center", background:"#F0F4FF", direction:"rtl", fontFamily:"sans-serif"}}>
       <style dangerouslySetInnerHTML={{ __html: globalCss }} />
       <div style={{background:"#fff", padding:"5vh 4vw", borderRadius:"3vh", boxShadow:"0 1vh 4vh rgba(21,101,192,0.1)", width:"85%", maxWidth:"400px", textAlign:"center", maxHeight:"90vh", overflowY:"auto"}}>
-        <div style={{fontSize:"6vh", marginBottom:"2vh"}}>🏋️</div>
+        <img src="/images/tab-image.png" alt="Logo" style={{ height: "15vh", width: "15vh", objectFit: "contain" }} />
         <h1 style={{fontSize:"3vh", fontWeight:700, color:"#1a1a2e", marginBottom:"1vh", margin:0}}>ברוך הבא</h1>
         <p style={{fontSize:"1.8vh", color:"#666", marginBottom:"4vh", marginTop:"1vh"}}>לא נשית איי - כניסה למערכת</p>
         <form onSubmit={submit} style={{display:"flex", flexDirection:"column", gap:"2.5vh"}}>
           <div style={{textAlign:"right"}}>
-            <label style={{fontSize:"1.6vh", color:"#555", fontWeight:600, display:"block", marginBottom:"1vh"}}>שם משתמש / טלפון / אימייל</label>
+            <label style={{fontSize:"1.6vh", color:"#555", fontWeight:600, display:"block", marginBottom:"1vh"}}> טלפון / דוא"ל</label>
             <input required value={identifier} onChange={e=>setIdentifier(e.target.value)} style={{width:"100%", padding:"1.8vh 2vw", border:"1.5px solid #e0e0e0", borderRadius:"1.5vh", outline:"none", fontSize:"1.8vh", fontFamily:"inherit", boxSizing:"border-box", transition:"0.2s"}} onFocus={e=>e.target.style.borderColor="#1565C0"} onBlur={e=>e.target.style.borderColor="#e0e0e0"} placeholder="הזן פרטי זיהוי" />
           </div>
           <div style={{textAlign:"right"}}>
@@ -209,34 +213,86 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
   const sessionsThisWeek = db?.sessions?.filter(s => s.trainerId === user?.id && s.date >= sun && s.date <= sat).length || 0;
   const remaining = Math.max(0, totalSessions - sessionsThisWeek);
 
+  // סגנון משותף ואחיד לכל הבאנרים כדי להבטיח רוחב מלא ויישור מושלם לימין
+  const bannerStyle = {
+    borderRadius: "2vh",
+    padding: "3.5vh 4vw",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "2vh",
+    direction: "rtl",
+    width: "100%", // מכריח פריסה על כל הרוחב
+    boxSizing: "border-box" 
+  };
+
+  const textContainerStyle = {
+    display: "flex",
+    flexDirection: "column",
+    flex: 1, // הטקסט מקבל את כל המרחב הפנוי 
+    alignItems: "flex-start", // מצמיד הכל ימינה (RTL)
+    textAlign: "right",
+    paddingLeft: "2vw" // קצת אוויר מהאייקון
+  };
+
+  const iconStyle = {
+    fontSize: "6.5vh",
+    opacity: 0.8,
+    flexShrink: 0, // מונע מהאייקון להימחץ פנימה ולשבור את הטקסט
+    marginLeft: "1vw",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  };
+
   return (
     <>
       <div className="trainee-top-bar">
         <div style={{display: "flex", alignItems: "center", gap: "2vw"}}>
-          <div style={{fontSize: "3.5vh"}}>🏋️</div>
-          {/* הוספת התו \u200F מבטיח שסימן הקריאה ישאר בצד שמאל בשפות RTL */}
+          <img src="/images/tab-image.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }} />
           <div className="trainee-top-title">{"שלום " + firstName + "!\u200F"}</div>
         </div>
-        <div onClick={onLogout} style={{color: "#d32f2f", cursor: "pointer", fontSize: "1.8vh", fontWeight: 600}}>🚪 יציאה</div>
+        <div onClick={onLogout} style={{background: "#d32f2f", color: "#fff", padding: "0.8vh 2vw", borderRadius: "1vh", cursor: "pointer", fontSize: "1.6vh", fontWeight: 700}}>🚪 יציאה</div>
       </div>
 
-      {remaining === 0 && totalSessions > 0 ? (
-        <div style={{background: "url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif') center/cover", borderRadius: "2vh", marginTop: "2vh", position: "relative", overflow: "hidden"}}>
-            <div style={{background: "rgba(232, 245, 233, 0.85)", padding: "3.5vh 4vw", display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%"}}>
-              <span style={{color: "#2e7d32", fontSize: "2.2vh", fontWeight: 800, textAlign: "center", textShadow: "0 1px 2px rgba(255,255,255,0.8)"}}>סיימת את כל האימונים שלך להשבוע תותח 🎉</span>
+      {!program ? (
+        <div style={{...bannerStyle, background: "#FFF3E0", boxShadow: "0 0.5vh 1.5vh rgba(230,81,0,0.1)"}}>
+          <div style={textContainerStyle}>
+            <span style={{color: "#E65100", fontSize: "2.1vh", fontWeight: 800}}>עוד אין תכנית אימונים?</span>
+            <span style={{color: "#E65100", fontSize: "1.8vh", fontWeight: 600, marginTop: "0.5vh"}}>מי יסחב את הסירות?</span>
+          </div>
+          <div style={iconStyle}>🛶</div>
+        </div>
+      ) : remaining === 0 && totalSessions > 0 ? (
+        <div style={{...bannerStyle, background: "url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif') center/cover", position: "relative", overflow: "hidden", padding: 0}}>
+            <div style={{background: "rgba(232, 245, 233, 0.85)", padding: "3.5vh 4vw", display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", height: "100%", direction: "rtl"}}>
+              <div style={textContainerStyle}>
+                <span style={{color: "#2e7d32", fontSize: "2.3vh", fontWeight: 800, textShadow: "0 1px 2px rgba(255,255,255,0.8)"}}>סיימת את כל האימונים שלך השבוע!</span>
+                <span style={{color: "#2e7d32", fontSize: "1.8vh", fontWeight: 600, marginTop: "0.5vh", textShadow: "0 1px 2px rgba(255,255,255,0.8)"}}>איזה תותח🎉 </span>
+              </div>
+              <div style={iconStyle}>🏆</div>
             </div>
         </div>
       ) : (
-        <div style={{background: "#E1F5FE", borderRadius: "2vh", padding: "3.5vh 4vw", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2vh"}}>
-          <div style={{display: "flex", flexDirection: "column", gap: "0.5vh"}}>
-            <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>נותרו לך עוד</span>
-            <div style={{display: "flex", alignItems: "baseline", gap: "1vw"}}>
-              <span style={{color: "#0277BD", fontSize: "3.5vh", fontWeight: 800, lineHeight: 1}}>{remaining}</span>
-              <span style={{color: "#0277BD", fontSize: "3.5vh", fontWeight: 800, lineHeight: 1}}>אימונים</span>
+        <div style={{...bannerStyle, background: "#E1F5FE"}}>
+          
+          {remaining === 1 ? (
+            <div style={textContainerStyle}>
+              <span style={{color: "#0277BD", fontSize: "2.4vh", fontWeight: 800}}>אכן ידידי!</span>
+              <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 600, marginTop: "0.5vh"}}>נותר לך עוד אימון אחד אחרון לשבוע הקרוב</span>
             </div>
-            <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>לשבוע הקרוב</span>
-          </div>
-          <div style={{fontSize: "7vh", opacity: 0.8}}>📅</div>
+          ) : (
+            <div style={textContainerStyle}>
+              <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>נותרו לך עוד</span>
+              <div style={{display: "flex", alignItems: "baseline", gap: "1vw", whiteSpace: "nowrap"}}>
+                <span style={{color: "#0277BD", fontSize: "4.5vh", fontWeight: 800, lineHeight: 1}}>{remaining}</span>
+                <span style={{color: "#0277BD", fontSize: "2.8vh", fontWeight: 800, lineHeight: 1}}>אימונים</span>
+              </div>
+              <span style={{color: "#0277BD", fontSize: "1.8vh", fontWeight: 500}}>לשבוע הקרוב</span>
+            </div>
+          )}
+          
+          <img src="/images/calender.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }}/>
         </div>
       )}
 
@@ -262,24 +318,54 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
 
 function TraineeProgram({ db, user, setActiveTab, onLogout }) {
   const [activeDay, setActiveDay] = useState(0);
-  const program = db?.programs?.find(p => p.id === user?.programId) || { name: "תוכנית אימונים", days: [{ name: "יום 1", exercises: [] }] };
+  const program = db?.programs?.find(p => p.id === user?.programId) || { name: "תוכנית אימונים", days: [] };
   const days = program.days || [];
   const exercises = days[activeDay]?.exercises || [];
+
+  // פונקציות להחלקת אצבע (Swipe) על המסך
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const handleTouchStart = (e) => {
+      setTouchEnd(null);
+      setTouchStart(e.targetTouches[0].clientX);
+  };
+  const handleTouchMove = (e) => {
+      setTouchEnd(e.targetTouches[0].clientX);
+  };
+  const handleTouchEnd = () => {
+      if (!touchStart || !touchEnd) return;
+      const distance = touchStart - touchEnd;
+      const minSwipeDistance = 50;
+      // החלקה שמאלה (הצגת היום הבא - אינדקס + 1)
+      if (distance > minSwipeDistance && activeDay < days.length - 1) {
+          setActiveDay(prev => prev + 1);
+      }
+      // החלקה ימינה (הצגת היום הקודם - אינדקס - 1)
+      if (distance < -minSwipeDistance && activeDay > 0) {
+          setActiveDay(prev => prev - 1);
+      }
+  };
 
   return (
     <>
       <div className="trainee-top-bar">
         <div className="trainee-top-icon" onClick={() => setActiveTab("home")}>➔</div>
         <div className="trainee-top-title">תוכנית אימונים</div>
-        <div onClick={onLogout} style={{color: "#d32f2f", cursor: "pointer", fontSize: "1.8vh", fontWeight: 600}}>🚪 יציאה</div>
+        <div onClick={onLogout} style={{background: "#d32f2f", color: "#fff", padding: "0.8vh 2vw", borderRadius: "1vh", cursor: "pointer", fontSize: "1.6vh", fontWeight: 700}}>🚪 יציאה</div>
       </div>
       <div className="program-day-tabs">
+        {days.length === 0 && <div className="day-tab active">אין ימים</div>}
         {days.map((d, i) => (
           <div key={i} className={`day-tab ${activeDay === i ? 'active' : ''}`} onClick={() => setActiveDay(i)}>{d.name || `יום ${i + 1}`}</div>
         ))}
       </div>
-      <div style={{display: "flex", flexDirection: "column", gap: "2vh"}}>
-        {exercises.length === 0 && <div style={{textAlign:"center", padding:"10vh 0", color:"#a0aec0"}}>אין תרגילים ביום זה</div>}
+      
+      {/* אזור רשימת התרגילים - כולל זיהוי החלקה */}
+      <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{display: "flex", flexDirection: "column", gap: "2vh", minHeight: "50vh", paddingBottom: "2vh"}}>
+        {exercises.length === 0 && days.length > 0 && <div style={{textAlign:"center", padding:"10vh 0", color:"#a0aec0"}}>אין תרגילים ביום זה</div>}
+        {exercises.length === 0 && days.length === 0 && <div style={{textAlign:"center", padding:"10vh 0", color:"#a0aec0"}}>לא קיימת תוכנית מסודרת</div>}
+        
         {exercises.map((ex, i) => (
           <div key={ex.id || i} style={{display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", padding: "1.5vh 0", borderBottom: "1px solid #f0f4f8"}}>
             <div style={{display: "flex", alignItems: "center", gap: "3vw"}}>
@@ -337,7 +423,7 @@ function TraineeProfile({ user, db, setActiveTab, onLogout, onEditTrainer }) {
       </div>
 
       <button onClick={() => setEditModalOpen(true)} style={{width: "100%", background: "#2196F3", color: "#fff", padding: "2vh", borderRadius: "1.5vh", border: "none", fontSize: "1.8vh", fontWeight: 700, cursor: "pointer"}}>עריכה</button>
-      <TrainerModal open={isEditModalOpen} onClose={() => setEditModalOpen(false)} onSave={onEditTrainer} initial={user} programs={db.programs} traineeMode={true} />
+      <TrainerModal open={isEditModalOpen} onClose={() => setEditModalOpen(false)} onSave={onEditTrainer} initial={user} programs={db.programs} trainers={db.trainers} traineeMode={true} />
     </>
   );
 }
@@ -347,7 +433,6 @@ function TraineeApp({ db, onLogout, onAddSession, onEditTrainer }) {
   const currentUserId = localStorage.getItem("fitcoach_userId");
   const currentUser = db?.trainers?.find(t => t.id === currentUserId) || db?.trainers?.[0] || { fname: "מתאמן", lname: "יקר" };
 
-  // בדיקת יום הולדת (היום מול תאריך הלידה במסד הנתונים)
   const todayDate = new Date();
   const isBirthday = currentUser.birthDate && 
                      new Date(currentUser.birthDate).getMonth() === todayDate.getMonth() && 
@@ -374,11 +459,8 @@ function TraineeApp({ db, onLogout, onAddSession, onEditTrainer }) {
             ))}
           </div>
 
-          {/* מודל יום הולדת חגיגי למתאמן */}
           {showBdayPopup && (
              <div style={{position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.65)", overflow:"hidden", direction: "rtl"}}>
-               
-               {/* בלונים עפים מהתחתית באנימציית CSS טהורה */}
                {Array.from({length: 20}).map((_, i) => (
                  <div key={i} className="balloon" style={{
                    left: `${Math.random() * 100}vw`,
@@ -387,8 +469,6 @@ function TraineeApp({ db, onLogout, onAddSession, onEditTrainer }) {
                    backgroundColor: COLORS[i % COLORS.length]
                  }}></div>
                ))}
-               
-               {/* רקע זיקוקים שקוף קלות שאינו מפריע ללחיצות */}
                <div style={{position:"absolute", inset:0, background:"url('https://media.giphy.com/media/peAFQfg7Ol6IE/giphy.gif') center/cover", opacity:0.4, pointerEvents:"none"}}></div>
 
                <div style={{background:"#fff", padding:"4vh 6vw", borderRadius:"3vh", zIndex:10, textAlign:"center", maxWidth:"85vw", boxShadow:"0 2vh 5vh rgba(0,0,0,0.3)", position:"relative"}}>
@@ -407,7 +487,6 @@ function TraineeApp({ db, onLogout, onAddSession, onEditTrainer }) {
 
 // ─── Admin Dashboard Components ────────────────────────────────────────────────
 
-// רכיב לוח שנה למחשב - מוקטן ומעוצב בתכלת ולבן
 function DashboardCalendar({ db }) {
   const [modalDay, setModalDay] = useState(null);
   
@@ -479,7 +558,6 @@ function DashboardCalendar({ db }) {
   );
 }
 
-// רכיב רשימה לפלאפון בלבד
 function DashboardMobileTrainees({ db }) {
   const now = new Date();
   const pad = n => n<10?'0'+n:n;
@@ -517,7 +595,7 @@ function Sidebar({page,setPage, onLogout}){
   const nav=[{id:"dashboard",icon:"🏠",label:"סקירה כללית"},{id:"trainers",icon:"👥",label:"מתאמנים"},{id:"programs",icon:"📋",label:"תוכניות אימון"},{id:"savedSets",icon:"🗂️",label:"תבניות וסטים"}];
   return <div className="sidebar" style={{width:"16vw",minWidth:"180px",flexShrink:0,background:"#1565C0",display:"flex",flexDirection:"column",paddingTop:"4vh"}}>
     <div className="sidebar-header" style={{textAlign:"center",marginBottom:"4vh",paddingBottom:"2vh",borderBottom:"1px solid rgba(255,255,255,.15)"}}>
-      <div style={{fontSize:"3.5vh",marginBottom:"0.5vh"}}>🏋️</div><div style={{color:"#fff",fontWeight:700,fontSize:"2.2vh"}}>לא נשית איי</div>
+      <img src="/images/tab-image.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }} /><div style={{color:"#fff",fontWeight:700,fontSize:"2.2vh"}}>לא נשית איי</div>
     </div>
     <div className="sidebar-nav" style={{flex:1, display:"flex", flexDirection:"column", gap:"1vh", padding:"0 1vw"}}>
       {nav.map(n=><div key={n.id} className={`sidebar-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:"1vw",padding:"1.5vh 1.5vw",cursor:"pointer",color:page===n.id?"#fff":"rgba(255,255,255,.7)",background:page===n.id?"rgba(255,255,255,.15)":"transparent",borderRight:page===n.id?"0.3vw solid #fff":"0.3vw solid transparent",fontWeight:page===n.id?600:400,fontSize:"1.7vh",transition:"all .15s", borderRadius: page===n.id?"0 1.5vh 1.5vh 0":"0"}}>
@@ -543,7 +621,6 @@ function Dashboard({db,onAddTrainer,onLogout}){
       {[{label:"סך אימונים השבוע",value:totalWeek,unit:"אימונים"},{label:"מתאמנים פעילים",value:trainers.length,unit:"מתאמנים"},{label:"ממוצע למתאמן",value:avgPer,unit:"אימונים לשבוע"}].map((s,i)=><div key={i} style={{background:"#fff",borderRadius:"2vh",padding:"2.5vh 2.5vw",boxShadow:"0 0.5vh 2vh rgba(33,150,243,.08)"}}><div style={{fontSize:"1.6vh",color:"#888",marginBottom:"1.5vh",textAlign:"right"}}>{s.label}</div><div style={{display:"flex",alignItems:"flex-end",gap:"0.5vw",justifyContent:"flex-end"}}><div style={{fontSize:"4.5vh",fontWeight:700,color:"#1565C0",lineHeight:1}}>{s.value}</div><div style={{fontSize:"1.6vh",color:"#888",paddingBottom:"0.5vh"}}>{s.unit}</div></div></div>)}
     </div>
 
-    {/* הלוח המפוצל - פלאפון מול מחשב */}
     <DashboardCalendar db={db} />
     <DashboardMobileTrainees db={db} />
 
@@ -681,7 +758,8 @@ function ProgramsPage({db,onAdd,onEdit,onDelete,onAssign,onLogout}){
   </div>;
 }
 
-function TrainerModal({open,onClose,onSave,initial,programs,traineeMode}){
+// ─── Modal למתאמן ולמנהל (כולל בדיקות תקינות) ────────────────────────────────
+function TrainerModal({open,onClose,onSave,initial,programs,trainers,traineeMode}){
   const blank={fname:"",lname:"",email:"",phone:"",password:"",weight:"",goal:"",programId:null,birthDate:"",age:""};
   const [form,setForm]=useState(blank);
   useEffect(()=>{ if(open) setForm(initial ? {...initial} : blank); },[open, initial]);
@@ -699,16 +777,28 @@ function TrainerModal({open,onClose,onSave,initial,programs,traineeMode}){
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
   const phoneRegex = /^\d{10}$/; 
 
+  // בדיקות תקינות (עיצוב אדום לשדות שגויים)
+  const isPhoneInvalid = form.phone?.trim().length > 0 && !phoneRegex.test(form.phone.trim());
+  const isEmailInvalid = form.email?.trim().length > 0 && !emailRegex.test(form.email.trim());
+  const isFnameInvalid = !traineeMode && form.fname?.trim().length > 0 && !hebrewRegex.test(form.fname.trim());
+  const isLnameInvalid = !traineeMode && form.lname?.trim().length > 0 && !hebrewRegex.test(form.lname.trim());
+  
+  // בדיקת כפילויות מול רשימת המתאמנים (למניעת הרשמה כפולה)
+  const isDuplicatePhone = form.phone?.trim().length === 10 && trainers.some(t => t.phone === form.phone.trim() && t.id !== form.id);
+  const isDuplicateEmail = form.email?.trim().length > 4 && trainers.some(t => t.email === form.email.trim() && t.id !== form.id);
+
   const isFnameValid = form.fname?.trim().length > 0 && hebrewRegex.test(form.fname.trim());
   const isLnameValid = form.lname?.trim().length > 0 && hebrewRegex.test(form.lname.trim());
   const isEmailValid = form.email?.trim().length > 0 && emailRegex.test(form.email.trim());
   const isPasswordValid = form.password && form.password.length >= 8;
   const isPhoneValid = form.phone?.trim().length > 0 && phoneRegex.test(form.phone.trim());
 
-  const valid = (traineeMode ? true : (isFnameValid && isLnameValid && isEmailValid && isPhoneValid)) && isPasswordValid;
+  const valid = (traineeMode ? true : (isFnameValid && isLnameValid && isEmailValid && isPhoneValid)) && isPasswordValid && !isDuplicatePhone && !isDuplicateEmail;
 
   let errorMsg = "";
-  if (!form.password || form.password.length < 8) errorMsg = "הסיסמה חייבת להכיל לפחות 8 תווים";
+  if (isDuplicatePhone) errorMsg = "מספר טלפון זה כבר קיים במערכת למשתמש אחר";
+  else if (isDuplicateEmail) errorMsg = "כתובת אימייל זו כבר קיימת במערכת למשתמש אחר";
+  else if (!form.password || form.password.length < 8) errorMsg = "הסיסמה חייבת להכיל לפחות 8 תווים";
   else if (!traineeMode) {
     if (!form.fname?.trim() || !form.lname?.trim()) errorMsg = "יש למלא שם פרטי ושם משפחה (שדות חובה)";
     else if (!hebrewRegex.test(form.fname.trim()) || !hebrewRegex.test(form.lname.trim())) errorMsg = "שם פרטי ושם משפחה חייבים להכיל אותיות בעברית בלבד";
@@ -720,20 +810,21 @@ function TrainerModal({open,onClose,onSave,initial,programs,traineeMode}){
 
   return <Modal open={open} onClose={onClose} title={initial?"עריכת פרטים":"הוספת מתאמן חדש"}>
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1vw"}}>
-      <Inp label="שם פרטי *" value={form.fname} onChange={e=>set("fname",e.target.value)} placeholder="עברית בלבד" disabled={traineeMode} style={{background: traineeMode ? "#f5f5f5" : "transparent", color: traineeMode ? "#888" : "inherit"}}/>
-      <Inp label="שם משפחה *" value={form.lname} onChange={e=>set("lname",e.target.value)} placeholder="עברית בלבד" disabled={traineeMode} style={{background: traineeMode ? "#f5f5f5" : "transparent", color: traineeMode ? "#888" : "inherit"}}/>
+      <Inp label="שם פרטי *" value={form.fname} onChange={e=>set("fname",e.target.value)} error={isFnameInvalid} placeholder="עברית בלבד" disabled={traineeMode} />
+      <Inp label="שם משפחה *" value={form.lname} onChange={e=>set("lname",e.target.value)} error={isLnameInvalid} placeholder="עברית בלבד" disabled={traineeMode} />
     </div>
     
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1vw"}}>
+      {/* תאריך לידה חסום למתאמן, פתוח למנהל */}
       <Inp label="תאריך לידה" type="date" value={form.birthDate||""} onChange={e=>{
           const val = e.target.value; setForm(f=>({...f, birthDate: val, age: calculateAge(val)}));
-      }} disabled={!!initial} style={{background: initial ? "#f5f5f5" : "transparent", color: initial ? "#888" : "inherit"}} />
-      <Inp label="גיל" type="number" value={form.age||""} readOnly disabled style={{background: "#f5f5f5", color: "#888"}} />
+      }} disabled={traineeMode} />
+      <Inp label="גיל" type="number" value={form.age||""} readOnly disabled />
     </div>
 
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1vw"}}>
-      <Inp label="אימייל *" type="email" value={form.email||""} onChange={e=>set("email",e.target.value)} disabled={traineeMode} style={{background: traineeMode ? "#f5f5f5" : "transparent", color: traineeMode ? "#888" : "inherit"}}/>
-      <Inp label="טלפון *" value={form.phone||""} onChange={e=>set("phone",e.target.value)} disabled={traineeMode} style={{background: traineeMode ? "#f5f5f5" : "transparent", color: traineeMode ? "#888" : "inherit"}}/>
+      <Inp label="אימייל *" type="email" value={form.email||""} error={isEmailInvalid || isDuplicateEmail} onChange={e=>set("email",e.target.value)} disabled={traineeMode} />
+      <Inp label="טלפון *" value={form.phone||""} error={isPhoneInvalid || isDuplicatePhone} onChange={e=>set("phone",e.target.value)} disabled={traineeMode} />
     </div>
 
     <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1vw"}}>
@@ -911,12 +1002,10 @@ export default function App(){
   if (!isAuthenticated) return <LoginPage onLogin={handleLogin} />;
   if (loading || !db) return <FullScreenLoader text="טוען נתונים מהשרת..." />;
 
-  // 🏋️‍♂️ חווית משתמש - מתאמן
   if (role === "user") {
     return <TraineeApp db={db} onLogout={handleLogout} onAddSession={addSession} onEditTrainer={editTrainer} />;
   }
 
-  // 🛠️ חווית מנהל - Admin
   const navTo=p=>{ setPage(p); setProgramBuilderTarget(null); setSavedSetBuilderTarget(null); };
 
   return <>
@@ -941,8 +1030,8 @@ export default function App(){
           {page==="savedSets"&&<SavedSetsPage db={db} onAdd={()=>setSavedSetBuilderTarget("new")} onEdit={s=>setSavedSetBuilderTarget(s)} onDelete={deleteSavedSet} onLogout={handleLogout}/>}
         </>
       }
-      <TrainerModal open={modal==="add-trainer"} onClose={()=>setModal(null)} onSave={addTrainer} programs={db.programs}/>
-      <TrainerModal open={modal==="edit-trainer"} onClose={()=>{setModal(null);setEditTarget(null);}} onSave={editTrainer} initial={editTarget} programs={db.programs}/>
+      <TrainerModal open={modal==="add-trainer"} onClose={()=>setModal(null)} onSave={addTrainer} programs={db.programs} trainers={db.trainers}/>
+      <TrainerModal open={modal==="edit-trainer"} onClose={()=>{setModal(null);setEditTarget(null);}} onSave={editTrainer} initial={editTarget} programs={db.programs} trainers={db.trainers}/>
     </div>
   </>;
 }
