@@ -292,7 +292,7 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
             </div>
           )}
           
-          <img src="/images/tab-image.png" alt="Logo" style={iconStyle}/>
+          <img src="/images/calender.png" alt="Logo" style={{ height: "8vh", width: "8vh", objectFit: "contain" }}/>
         </div>
       )}
 
