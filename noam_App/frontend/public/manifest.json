@@ -1,0 +1,21 @@
+{
+  "short_name": "NoamTrains",
+  "name": "לא נשית איי",
+  "icons": [
+    {
+      "src": "/images/tab-image.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/tab-image.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F0F4FF",
+  "display": "standalone",
+  "theme_color": "#1565C0",
+  "orientation": "portrait"
+}
