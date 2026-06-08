@@ -1,14 +1,14 @@
 {
   "short_name": "NoamTrains",
-  "name": "לא נשית איי - אימון חכם",
+  "name": "לא נשית איי",
   "icons": [
     {
-      "src": "images/tab-image.png",
+      "src": "/images/tab-image.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "images/tab-image.png",
+      "src": "/images/tab-image.png",
       "sizes": "512x512",
       "type": "image/png"
     }

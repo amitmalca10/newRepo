@@ -216,7 +216,6 @@ function LoginPage({ onLogin }) {
       <style dangerouslySetInnerHTML={{ __html: globalCss }} />
       <div style={{background:"var(--card)", padding:"5vh 4vw", borderRadius:"3vh", boxShadow:"0 1vh 4vh rgba(0,0,0,0.1)", width:"85%", maxWidth:"400px", textAlign:"center", maxHeight:"90vh", overflowY:"auto"}}>
         <img src="/images/tab-image.png" alt="Logo" style={{ height: "15vh", width: "15vh", objectFit: "contain" }} onError={(e)=>{e.target.style.display='none'}} />
-        <div style={{fontSize:"6vh", marginBottom:"1vh"}}>🏋️</div>
         
         <h1 style={{fontSize:"3vh", fontWeight:700, color:"var(--text)", marginBottom:"1vh", margin:0}}>ברוך הבא</h1>
         <p style={{fontSize:"1.8vh", color:"var(--text-sec)", marginBottom:"4vh", marginTop:"1vh"}}>לא נשית איי - כניסה למערכת</p>
