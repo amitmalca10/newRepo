@@ -141,10 +141,10 @@ const globalCss = `
   .t-nav-icon { font-size: 2.6vh; }
   .t-nav-text { font-size: 1.3vh; font-weight: 600; }
 
-  .big-play-btn-wrapper { position: relative; margin: 8vh auto 4vh auto; display: flex; justify-content: center; align-items: center; width: 26vh; height: 26vh; }
+  .big-play-btn-wrapper { position: relative; margin: 6vh auto 1vh auto; display: flex; justify-content: center; align-items: center; width: 26vh; height: 26vh; }
   .circle-ripple-1 { position: absolute; width: 100%; height: 100%; border-radius: 50%; animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
   .circle-ripple-2 { position: absolute; width: 85%; height: 85%; border-radius: 50%; animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; animation-delay: 0.5s; }
-  .big-play-btn { position: relative; width: 70%; height: 70%; background: #29B6F6; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; box-shadow: 0 1vh 3vh rgba(41, 182, 246, 0.4); cursor: pointer; z-index: 2; transition: transform 0.1s; }
+  .big-play-btn { position: relative; width: 70%; height: 70%; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; cursor: pointer; z-index: 2; transition: transform 0.1s; }
   .big-play-btn:active { transform: scale(0.95); }
 
   .program-day-tabs { display: flex; gap: 4vw; border-bottom: 2px solid var(--border); margin-bottom: 3vh; overflow-x: auto; padding-bottom: 1.5vh; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -251,12 +251,74 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
   const sessionsThisWeek = db?.sessions?.filter(s => s.trainerId === user?.id && s.date >= sun && s.date <= sat).length || 0;
   const remaining = Math.max(0, totalSessions - sessionsThisWeek);
 
+  // מנגנון הטיימר החדש
+  const [trainingStart, setTrainingStart] = useState(() => localStorage.getItem("fc_train_start"));
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (trainingStart) {
+      const interval = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [trainingStart]);
+
+  const elapsedSecs = trainingStart ? Math.floor((now - parseInt(trainingStart)) / 1000) : 0;
+  const isTraining = !!trainingStart && !trainedToday;
+
+  const formatTime = (secs) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+  };
+
+  const handleTrainClick = () => {
+    if (trainedToday) return; 
+    if (isTraining) {
+       // סיום אימון
+       const mins = Math.max(1, Math.round(elapsedSecs / 60)); // מינימום דקה
+       setTrainingStart(null);
+       localStorage.removeItem("fc_train_start");
+       onAddSession(user.id, mins);
+    } else {
+       // התחלת אימון
+       const st = Date.now().toString();
+       setTrainingStart(st);
+       localStorage.setItem("fc_train_start", st);
+       setNow(Date.now());
+    }
+  };
+
   const bannerStyle = {
     borderRadius: "2vh", padding: "3.5vh 4vw", display: "flex", justifyContent: "space-between", alignItems: "center",
     marginTop: "2vh", direction: "rtl", width: "100%", boxSizing: "border-box" 
   };
   const textContainerStyle = { display: "flex", flexDirection: "column", flex: 1, alignItems: "flex-start", textAlign: "right", paddingLeft: "2vw" };
   const iconStyle = { fontSize: "6.5vh", opacity: 0.8, flexShrink: 0, marginLeft: "1vw", display: "flex", alignItems: "center", justifyContent: "center" };
+
+  // הגדרת עיצוב כפתור דינמי לפי המצב
+  let ripple1Bg = "rgba(41, 182, 246, 0.15)";
+  let ripple2Bg = "rgba(41, 182, 246, 0.25)";
+  let btnBg = "#29B6F6";
+  let btnBoxShadow = "0 1vh 3vh rgba(41, 182, 246, 0.4)";
+  let icon = <img src="/images/start-train.png" alt="" style={{ height: "6vh", width: "6vh", objectFit: "contain" }} />;
+  let text = "יצאתי להתאמן";
+
+  if (trainedToday) {
+     ripple1Bg = "rgba(76, 175, 80, 0.15)";
+     ripple2Bg = "rgba(76, 175, 80, 0.25)";
+     btnBg = "#4CAF50";
+     btnBoxShadow = "0 1vh 3vh rgba(76, 175, 80, 0.4)";
+     icon =<img src="/images/end-train.png" alt="" style={{ height: "6vh", width: "6vh", objectFit: "contain" }} />;
+     text = "יא ווסחאב";
+  } else if (isTraining) {
+     ripple1Bg = "rgba(255, 152, 0, 0.15)";
+     ripple2Bg = "rgba(255, 152, 0, 0.25)";
+     btnBg = "#FF9800";
+     btnBoxShadow = "0 1vh 3vh rgba(255, 152, 0, 0.4)";
+     icon = <img src="/images/mid-train.png" alt="" style={{ height: "6vh", width: "6vh", objectFit: "contain" }} />;
+     text = "סיימתי להתאמן";
+  }
 
   return (
     <>
@@ -304,26 +366,24 @@ function TraineeHome({ user, db, onLogout, setActiveTab, onAddSession }) {
             </div>
           )}
           <img src="/images/calender.png" alt="Calendar" style={{ height: "6vh", width: "6vh", objectFit: "contain", flexShrink: 0 }} onError={(e)=>{e.target.style.display='none'}}/>
-          <div style={{...iconStyle, display: "none"}}>📅</div>
         </div>
       )}
 
       <div className="big-play-btn-wrapper">
-        <div className="circle-ripple-1" style={trainedToday ? {background: "rgba(76, 175, 80, 0.15)"} : {background: "rgba(41, 182, 246, 0.15)"}}></div>
-        <div className="circle-ripple-2" style={trainedToday ? {background: "rgba(76, 175, 80, 0.25)"} : {background: "rgba(41, 182, 246, 0.25)"}}></div>
-        
-        {trainedToday ? (
-          <div className="big-play-btn" style={{background: "#4CAF50", boxShadow: "0 1vh 3vh rgba(76, 175, 80, 0.4)", cursor: "default", transform: "none"}}>
-            <span style={{fontSize: "5vh"}}>💪</span>
-            <span style={{fontSize: "2vh", fontWeight: 700, marginTop: "1vh"}}>יא ווסחאב</span>
-          </div>
-        ) : (
-          <div className="big-play-btn" onClick={() => onAddSession(user.id)}>
-            <span style={{fontSize: "5vh"}}>🏋️‍♂️</span>
-            <span style={{fontSize: "2vh", fontWeight: 700, marginTop: "1vh"}}>יצאתי להתאמן</span>
-          </div>
-        )}
+        <div className="circle-ripple-1" style={{background: ripple1Bg}}></div>
+        <div className="circle-ripple-2" style={{background: ripple2Bg}}></div>
+        <div className="big-play-btn" onClick={handleTrainClick} style={{background: btnBg, boxShadow: btnBoxShadow, cursor: trainedToday ? "default" : "pointer", transform: trainedToday ? "none" : ""}}>
+          <span style={{fontSize: "5vh"}}>{icon}</span>
+          <span style={{fontSize: "2vh", fontWeight: 700, marginTop: "1vh", textAlign: "center", lineHeight: "1.1"}}>{text}</span>
+        </div>
       </div>
+      
+      {/* הצגת טיימר חי כשהאימון רץ */}
+      {isTraining && (
+        <div style={{textAlign: "center", marginTop: "3vh", fontSize: "5vh", fontWeight: 800, color: "#FF9800", fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.05)", direction: "ltr"}}>
+          {formatTime(elapsedSecs)}
+        </div>
+      )}
     </>
   );
 }
@@ -385,6 +445,11 @@ function TraineeProfile({ user, db, setActiveTab, onLogout, onEditTrainer, toggl
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const program = db?.programs?.find(p => p.id === user?.programId);
   
+  const userSessions = db?.sessions?.filter(s => s.trainerId === user?.id) || [];
+  const avgActual = userSessions.length ? Math.round(userSessions.reduce((sum, s) => sum + (s.duration || 0), 0) / userSessions.length) : 0;
+  const progDays = program?.days || [];
+  const avgEst = progDays.length ? Math.round(progDays.reduce((sum, d) => sum + (Number(d.estimatedDuration) || 0), 0) / progDays.length) : 0;
+
   return (
     <>
       <div className="trainee-top-bar">
@@ -407,6 +472,18 @@ function TraineeProfile({ user, db, setActiveTab, onLogout, onEditTrainer, toggl
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", background:"var(--bg)", padding:"2vh 4vw", borderRadius:"2vh", marginBottom:"4vh"}}>
         <span style={{fontSize:"1.7vh", fontWeight:600, color:"var(--text)"}}>מצב לילה</span>
         <button onClick={toggleTheme} style={{background:"transparent", border:"none", fontSize:"3vh", cursor:"pointer"}}>{isDark ? "🌙" : "☀️"}</button>
+      </div>
+
+      <div style={{marginBottom: "4vh"}}>
+        <div style={{color: "#1565C0", fontSize: "1.8vh", fontWeight: 700, marginBottom: "2vh"}}>זמני אימון</div>
+        <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: "1.5vh", marginBottom: "1.5vh"}}>
+          <span style={{fontSize: "1.7vh", color: "var(--text-sec)"}}>זמן משוער (לפי התוכנית)</span>
+          <span style={{fontSize: "1.7vh", fontWeight: 600, color: "var(--text)"}}>{avgEst > 0 ? `${avgEst} דקות` : "לא הוגדר"}</span>
+        </div>
+        <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: "1.5vh", marginBottom: "2vh"}}>
+          <span style={{fontSize: "1.7vh", color: "var(--text-sec)"}}>זמן בפועל (הממוצע שלך)</span>
+          <span style={{fontSize: "1.7vh", fontWeight: 600, color: "var(--text)"}}>{avgActual > 0 ? `${avgActual} דקות` : "אין נתונים"}</span>
+        </div>
       </div>
 
       <div style={{marginBottom: "4vh"}}>
@@ -536,7 +613,11 @@ function DashboardCalendar({ db }) {
       const dateStr = `${year}-${pad(month+1)}-${pad(i)}`;
       const dSessions = db.sessions.filter(s => s.date === dateStr);
       const uIds = [...new Set(dSessions.map(s => s.trainerId))];
-      const tList = uIds.map(id => db.trainers.find(t=>t.id===id)).filter(Boolean);
+      const tList = uIds.map(id => {
+          const t = db.trainers.find(tr=>tr.id===id);
+          const s = dSessions.find(sess => sess.trainerId === id);
+          return t ? { ...t, sessionDuration: s?.duration || 0 } : null;
+      }).filter(Boolean);
       days.push({ day: i, dateStr, count: tList.length, trainees: tList });
   }
 
@@ -565,9 +646,12 @@ function DashboardCalendar({ db }) {
           <Modal open={!!modalDay} onClose={()=>setModalDay(null)} title={`התאמנו ב-${modalDay?.dateStr}`}>
               <div style={{display:"flex", flexDirection:"column", gap:"1.5vh", maxHeight:"40vh", overflowY:"auto"}}>
                   {modalDay?.trainees.map(t => (
-                      <div key={t.id} style={{display:"flex", alignItems:"center", gap:"1vw", padding:"1.5vh", background:"var(--bg)", borderRadius:"1.5vh"}}>
-                          <Avatar trainer={t} size={40}/>
-                          <span style={{fontWeight:600, fontSize:"1.7vh", color:"#0277BD"}}>{t.fname} {t.lname}</span>
+                      <div key={t.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.5vh", background:"var(--bg)", borderRadius:"1.5vh"}}>
+                          <div style={{display:"flex", alignItems:"center", gap:"1vw"}}>
+                            <Avatar trainer={t} size={40}/>
+                            <span style={{fontWeight:600, fontSize:"1.7vh", color:"#0277BD"}}>{t.fname} {t.lname}</span>
+                          </div>
+                          {t.sessionDuration > 0 && <div style={{fontSize:"1.4vh", fontWeight:600, color:"#FF9800", background:"rgba(255,152,0,0.1)", padding:"0.5vh 1vw", borderRadius:"1vh"}}>⏱️ {t.sessionDuration} דק'</div>}
                       </div>
                   ))}
               </div>
@@ -581,7 +665,11 @@ function DashboardMobileTrainees({ db }) {
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const dSessions = db.sessions.filter(s => s.date === dateStr);
   const uIds = [...new Set(dSessions.map(s => s.trainerId))];
-  const tList = uIds.map(id => db.trainers.find(t=>t.id===id)).filter(Boolean);
+  const tList = uIds.map(id => {
+      const t = db.trainers.find(tr=>tr.id===id);
+      const s = dSessions.find(sess => sess.trainerId === id);
+      return t ? { ...t, sessionDuration: s?.duration || 0 } : null;
+  }).filter(Boolean);
 
   return (
       <div className="mobile-only" style={{background:"var(--card)", borderRadius:"2vh", padding:"2.5vh 4vw", boxShadow:"0 0.5vh 2vh rgba(0,0,0,.05)", marginTop:"3vh"}}>
@@ -594,9 +682,12 @@ function DashboardMobileTrainees({ db }) {
           ) : (
               <div style={{display:"flex", flexDirection:"column", gap:"1.5vh"}}>
                   {tList.map(t => (
-                      <div key={t.id} style={{display:"flex", alignItems:"center", gap:"3vw", padding:"1.5vh", background:"var(--bg)", borderRadius:"1.5vh"}}>
-                          <Avatar trainer={t} size={40}/>
-                          <span style={{fontWeight:600, fontSize:"1.8vh", color:"var(--text)"}}>{t.fname} {t.lname}</span>
+                      <div key={t.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.5vh", background:"var(--bg)", borderRadius:"1.5vh"}}>
+                          <div style={{display:"flex", alignItems:"center", gap:"3vw"}}>
+                            <Avatar trainer={t} size={40}/>
+                            <span style={{fontWeight:600, fontSize:"1.8vh", color:"var(--text)"}}>{t.fname} {t.lname}</span>
+                          </div>
+                          {t.sessionDuration > 0 && <div style={{fontSize:"1.4vh", fontWeight:600, color:"#FF9800", background:"rgba(255,152,0,0.1)", padding:"0.5vh 1vw", borderRadius:"1vh"}}>⏱️ {t.sessionDuration} דק'</div>}
                       </div>
                   ))}
               </div>
@@ -666,6 +757,9 @@ function TrainersPage({db,onAdd,onDelete,onEdit,onLogout,toggleTheme,isDark}){
         const prog=t.programId?programs.find(p=>p.id===t.programId):null;
         const wc=getWeekCount(sessions,t.id); const freq=prog?.sessionsPerWeek||0; const pct=freq?Math.min(Math.round(wc/freq*100),100):0;
         
+        const userSess = sessions.filter(s => s.trainerId === t.id);
+        const avgDur = userSess.length ? Math.round(userSess.reduce((acc, s)=>acc+(s.duration||0),0)/userSess.length) : 0;
+
         const waPhone = t.phone?.startsWith("0") ? "972" + t.phone.slice(1) : t.phone;
         const waMsg = encodeURIComponent(`אהלן ${t.fname}, ראיתי שעוד לא עשית אימון השבוע, הכל בסדר? 💪`);
 
@@ -675,6 +769,7 @@ function TrainersPage({db,onAdd,onDelete,onEdit,onLogout,toggleTheme,isDark}){
              {t.phone && <button onClick={()=>window.open(`https://wa.me/${waPhone}?text=${waMsg}`, "_blank")} style={{background:"#25D366", border:"none", borderRadius:"50%", width:"4vh", height:"4vh", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0.5vh 1vh rgba(37, 211, 102, 0.3)"}} title="שלח הודעת התעניינות בוואטסאפ"><svg width="2vh" height="2vh" viewBox="0 0 24 24" fill="white"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z"/></svg></button>}
           </div>
           <div style={{fontSize:"1.5vh",color:"var(--text-sec)",marginBottom:"0.5vh"}}>🎯 {t.goal||"לא הוגדר"}</div>
+          <div style={{fontSize:"1.5vh",color:"#FF9800",marginBottom:"0.5vh",fontWeight:600}}>⏱️ זמן אימון ממוצע: {avgDur > 0 ? avgDur + " דקות" : "אין נתונים"}</div>
           <div style={{fontSize:"1.5vh",color:"#1565C0",marginBottom:"1.5vh",fontWeight:600}}>📋 {prog?`${prog.name}`:"❌ ללא תוכנית אימון"}</div>
           {freq>0&&<><div style={{display:"flex",justifyContent:"space-between",fontSize:"1.5vh",marginBottom:"0.5vh"}}><span style={{color:"var(--text-sec)"}}>אימונים השבוע</span><span style={{fontWeight:600,color:"#1565C0"}}>{wc}/{freq}</span></div><div style={{background:"var(--bg)",borderRadius:"1vh",height:"1vh",overflow:"hidden",marginBottom:"2vh"}}><div style={{width:pct+"%",height:"100%",borderRadius:"1vh",background:pct>=100?"#4CAF50":pct>=60?"#2196F3":"#FF9800"}}/></div></>}
           <div style={{display:"flex",gap:"0.5vw"}}><Btn sm full onClick={()=>onEdit(t)}>✏️ עריכה</Btn><Btn sm full danger onClick={()=>onDelete(t.id)}>🗑️ מחיקה</Btn></div>
@@ -736,9 +831,12 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
   const [importModalOpen, setImportModalOpen]=useState(false);
 
   const upd=patch=>setProg(p=>({...p,...patch}));
-  const addDay=()=>{ const n={id:Date.now(),name:`יום ${prog.days.length+1}`,exercises:[]}; setProg(p=>({...p,days:[...p.days,n]})); setSelDay(prog.days.length); };
+  const addDay=()=>{ const n={id:Date.now(),name:`יום ${prog.days.length+1}`,exercises:[], estimatedDuration: 60}; setProg(p=>({...p,days:[...p.days,n]})); setSelDay(prog.days.length); };
   const removeDay=idx=>{ setProg(p=>({...p,days:p.days.filter((_,i)=>i!==idx)})); setSelDay(s=>Math.max(0,s-(s>=idx?1:0))); };
-  const renameDay=(idx,name)=>setProg(p=>({...p,days:p.days.map((d,i)=>i===idx?{...d,name}:d)}));
+  
+  // פונקציה חכמה יותר לעדכון פרטי היום (שם, וגם זמן משוער)
+  const updDayProp=(idx, key, val)=>setProg(p=>({...p,days:p.days.map((d,i)=>i===idx?{...d,[key]:val}:d)}));
+  
   const dayExercises=prog.days[selDay]?.exercises||[];
   const updExercises=exs=>setProg(p=>({...p,days:p.days.map((d,i)=>i===selDay?{...d,exercises:exs}:d)}));
   const addExercise=()=>updExercises([...dayExercises,{id:Date.now(),name:"",sets:3,reps:10,rest:60,weight:"",note:""}]);
@@ -786,7 +884,18 @@ function ProgramBuilder({program:initProg, programs, savedSets, onSave, onCancel
         <Btn full onClick={addDay} disabled={prog.days.length>=7} style={{background:"transparent", color:"#1565C0", border:"0.2vw dashed #90CAF9", marginTop:"2vh"}}>+ הוסף יום</Btn>
       </div>
       {prog.days[selDay]?<div style={{background:"var(--card)",borderRadius:"2vh",padding:"3vh",boxShadow:"0 0.5vh 2vh rgba(0,0,0,.05)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"3vh", paddingBottom:"2vh", borderBottom:"1px solid var(--border)"}}><div><input value={prog.days[selDay].name} onChange={e=>renameDay(selDay,e.target.value)} style={{fontSize:"2.5vh",fontWeight:700,color:"var(--text)",border:"none",outline:"none",background:"transparent",fontFamily:"inherit",direction:"rtl", width:"100%"}} placeholder="שם היום"/></div><div style={{display:"flex", gap:"1vw"}}><Btn style={{background:"rgba(0, 151, 167, 0.15)", color:"#0097a7"}} onClick={()=>setImportModalOpen(true)}>📥 ייבא סט</Btn><Btn primary onClick={addExercise}>+ תרגיל</Btn></div></div>
+        
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:"3vh", paddingBottom:"2vh", borderBottom:"1px solid var(--border)", flexWrap:"wrap", gap:"2vh"}}>
+           <div style={{flex:1, minWidth:"200px"}}>
+               <input value={prog.days[selDay].name} onChange={e=>updDayProp(selDay, 'name', e.target.value)} style={{fontSize:"2.5vh",fontWeight:700,color:"var(--text)",border:"none",outline:"none",background:"transparent",fontFamily:"inherit",direction:"rtl", width:"100%", marginBottom:"1vh"}} placeholder="שם היום"/>
+               <div style={{display:"flex", alignItems:"center", gap:"1vw"}}>
+                  <label style={{fontSize:"1.4vh",color:"var(--text-sec)", fontWeight:600}}>⏱️ זמן משוער (בדקות):</label>
+                  <input type="number" min="1" value={prog.days[selDay].estimatedDuration||""} onChange={e=>updDayProp(selDay, 'estimatedDuration', Number(e.target.value))} style={{width:"10vh", padding:"0.8vh", border:"1.5px solid var(--border)", borderRadius:"0.5vh", fontSize:"1.5vh", background:"var(--input-bg)", color:"var(--text)"}} placeholder="למשל: 60"/>
+               </div>
+           </div>
+           <div style={{display:"flex", gap:"1vw"}}><Btn style={{background:"rgba(0, 151, 167, 0.15)", color:"#0097a7"}} onClick={()=>setImportModalOpen(true)}>📥 ייבא סט</Btn><Btn primary onClick={addExercise}>+ תרגיל</Btn></div>
+        </div>
+
         {dayExercises.map((ex,i)=><div key={ex.id} style={{background:"var(--bg)",borderRadius:"1.5vh",padding:"2vh",marginBottom:"2vh",border:"1px solid var(--border)"}}><div className="exercise-row" style={{display:"flex",alignItems:"center",gap:"1vw",marginBottom:"2vh"}}><div style={{display:"flex",flexDirection:"row",gap:"0.5vw"}}><div style={{background:"rgba(33, 150, 243, 0.15)",color:"#1565c0",borderRadius:"1vh",width:"3.5vh",height:"3.5vh",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5vh",fontWeight:700,flexShrink:0}}>{i+1}</div><button onClick={()=>moveEx(i,-1)} disabled={i===0} style={{background:"none",border:"none",cursor:i===0?"default":"pointer",color:i===0?"var(--border)":"var(--text-sec)",fontSize:"1.8vh"}}>▲</button><button onClick={()=>moveEx(i,1)} disabled={i===dayExercises.length-1} style={{background:"none",border:"none",cursor:i===dayExercises.length-1?"default":"pointer",color:i===dayExercises.length-1?"var(--border)":"var(--text-sec)",fontSize:"1.8vh"}}>▼</button></div><input value={ex.name} onChange={e=>updExercise(ex.id,{name:e.target.value})} placeholder="שם התרגיל" style={{flex:1, padding:"1.5vh 1.5vw",border:"1.5px solid var(--border)",borderRadius:"1vh",fontSize:"1.7vh",direction:"rtl",outline:"none",fontFamily:"inherit",fontWeight:600, background:"var(--input-bg)", color:"var(--text)"}}/><button onClick={()=>removeExercise(ex.id)} style={{background:"var(--danger-btn-bg)",border:"none",borderRadius:"1vh",cursor:"pointer",color:"var(--danger-btn-text)",width:"4vh",height:"4vh", fontSize:"2vh",transition:"all 0.2s"}}>🗑</button></div><div className="exercise-inputs" style={{display:"grid",gridTemplateColumns:"repeat(4, 7vw) 1fr",gap:"1vw",paddingRight:"4vw"}}>{[{label:"סטים",key:"sets",type:"number",min:1},{label:"חזרות",key:"reps",type:"number",min:1},{label:"מנוחה (שנ')",key:"rest",type:"number",min:0},{label:"משקל",key:"weight",type:"number",min:0}].map(f=><div key={f.key}><label style={{fontSize:"1.4vh",color:"var(--text-sec)",display:"block",marginBottom:"1vh",whiteSpace:"nowrap"}}>{f.label}</label><input type={f.type} min={f.min} value={ex[f.key]||""} onChange={e=>updExercise(ex.id,{[f.key]:e.target.value===""?null:Number(e.target.value)})} style={{width:"100%",padding:"1.2vh 1vw",border:"1.5px solid var(--border)",borderRadius:"1vh",fontSize:"1.6vh",boxSizing:"border-box", background:"var(--input-bg)", color:"var(--text)"}}/></div>)}<div className="full-w"><label style={{fontSize:"1.4vh",color:"var(--text-sec)",display:"block",marginBottom:"1vh"}}>הערות</label><input value={ex.note||""} onChange={e=>updExercise(ex.id,{note:e.target.value})} style={{width:"100%",padding:"1.2vh 1vw",border:"1.5px solid var(--border)",borderRadius:"1vh",fontSize:"1.6vh",boxSizing:"border-box", background:"var(--input-bg)", color:"var(--text)"}} placeholder="דגשים..."/></div></div></div>)}
       </div>:<div style={{background:"var(--card)",borderRadius:"2vh",display:"flex",alignItems:"center",justifyContent:"center",minHeight:"50vh",color:"var(--text-sec)",flexDirection:"column",gap:"2vh"}}><div style={{fontSize:"6vh"}}>📋</div><div style={{fontSize:"2vh", fontWeight:500}}>בחר יום מהרשימה</div></div>}
     </div>
@@ -988,9 +1097,10 @@ export default function App(){
     setSaving(true); setDb(prev=>{ const next=updater(prev); saveLocalDB(next).then(()=>setSaving(false)); return next; });
   },[]);
 
-  const addSession = async trainerId => {
+  // שימו לב! כאן נוסף 'duration'
+  const addSession = async (trainerId, duration) => {
     const dateStr = new Date().toISOString().slice(0, 10);
-    const sessionForm = { trainerId, date: dateStr, type: "workout" };
+    const sessionForm = { trainerId, date: dateStr, type: "workout", duration: duration || 0 };
     try {
       const res = await fetch(`${API_URL}/sessions`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("fitcoach_token")}` }, body: JSON.stringify(sessionForm) });
       const newS = await res.json(); updateDb(prev => ({...prev, sessions: [...prev.sessions, { ...sessionForm, id: newS._id || newS.id }]}));

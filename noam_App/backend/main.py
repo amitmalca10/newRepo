@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Body
-from fastapi import Header
+from fastapi import FastAPI, HTTPException, Body, Header
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,6 +61,7 @@ class Day(BaseModel):
     id: int
     name: str
     exercises: List[Exercise] = []
+    estimatedDuration: int = 60 # <--- השדה החדש שנוסף: זמן משוער לאימון
 
 class ProgramModel(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
@@ -70,7 +70,7 @@ class ProgramModel(BaseModel):
     level: str = "בינוני"
     sessionsPerWeek: int = 3
     days: List[Day] = []
-    importedSetIds: List[str] = [] # <--- השורה החדשה שהוספנו
+    importedSetIds: List[str] = []
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -108,6 +108,7 @@ class SessionModel(BaseModel):
     trainerId: str
     date: str
     type: str
+    duration: int = 0 # <--- השדה החדש שנוסף: זמן האימון בפועל בדקות
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -220,31 +221,6 @@ async def create_trainer(trainer: TrainerModel):
     return await trainers_collection.find_one({"_id": new_trainer.inserted_id})
 
 @app.put("/trainers/{id}")
-async def update_trainer(id: str, data: dict = Body(...)):
-    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
-    data.pop("_id", None)
-    data.pop("id", None)
-    await trainers_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
-    return {"status": "updated"}
-
-@app.delete("/trainers/{id}")
-async def delete_trainer(id: str):
-    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
-    await trainers_collection.delete_one({"_id": ObjectId(id)})
-    await sessions_collection.delete_many({"trainerId": id})
-    return {"status": "deleted"}
-
-# --- SESSIONS ROUTES ---
-@app.get("/sessions", response_model=List[SessionModel])
-async def get_sessions():
-    return await sessions_collection.find().to_list(1000)
-
-@app.post("/sessions", response_model=SessionModel)
-async def create_session(session: SessionModel):
-    new_session = await sessions_collection.insert_one(session.dict(by_alias=True, exclude={"id"}))
-    return await sessions_collection.find_one({"_id": new_session.inserted_id})
-
-@app.put("/trainers/{id}")
 async def update_trainer(id: str, data: dict = Body(...), authorization: str = Header(None)):
     if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
     
@@ -282,3 +258,20 @@ async def update_trainer(id: str, data: dict = Body(...), authorization: str = H
         await trainers_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
         
     return {"status": "updated"}
+
+@app.delete("/trainers/{id}")
+async def delete_trainer(id: str):
+    if id == "undefined" or not id: raise HTTPException(status_code=400, detail="Invalid ID")
+    await trainers_collection.delete_one({"_id": ObjectId(id)})
+    await sessions_collection.delete_many({"trainerId": id})
+    return {"status": "deleted"}
+
+# --- SESSIONS ROUTES ---
+@app.get("/sessions", response_model=List[SessionModel])
+async def get_sessions():
+    return await sessions_collection.find().to_list(1000)
+
+@app.post("/sessions", response_model=SessionModel)
+async def create_session(session: SessionModel):
+    new_session = await sessions_collection.insert_one(session.dict(by_alias=True, exclude={"id"}))
+    return await sessions_collection.find_one({"_id": new_session.inserted_id})
